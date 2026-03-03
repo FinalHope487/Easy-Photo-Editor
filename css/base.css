@@ -1,0 +1,49 @@
+:root {
+    --bg-base: #0f1115;
+    --bg-surface: rgba(26, 29, 36, 0.7);
+    --bg-surface-hover: rgba(43, 48, 59, 0.8);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --danger: #ef4444;
+    --success: #10b981;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --glass-blur: blur(12px);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    overflow: hidden;
+    /* App-like feel */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Typography */
+h2,
+h3,
+h4 {
+    font-weight: 600;
+}
+
+.small-text {
+    font-size: 0.8rem;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
