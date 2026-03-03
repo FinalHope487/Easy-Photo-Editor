@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Editor Pro</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/utilities.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Drag & Drop Overlay -->
+    <div id="drop-zone" class="hidden">
+        <div class="drop-message">
+            <i data-lucide="upload-cloud"></i>
+            <span>放開滑鼠以上傳圖片</span>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="logo">
+                <div class="logo-icon"><i data-lucide="aperture"></i></div>
+                <span>編輯器 Pro</span>
+            </div>
+
+            <div class="nav-center">
+                <button id="btn-undo" class="icon-btn" title="復原 (Ctrl+Z)"><i data-lucide="undo-2"></i></button>
+                <button id="btn-redo" class="icon-btn" title="重做 (Ctrl+Y)"><i data-lucide="redo-2"></i></button>
+                <div class="divider"></div>
+                <button id="btn-zoom-out" class="icon-btn" title="縮小"><i data-lucide="zoom-out"></i></button>
+                <span id="zoom-level">100%</span>
+                <button id="btn-zoom-in" class="icon-btn" title="放大"><i data-lucide="zoom-in"></i></button>
+                <button id="btn-zoom-fit" class="icon-btn" title="適應螢幕"><i data-lucide="maximize"></i></button>
+                <div class="divider"></div>
+                <span id="image-dimensions" class="text-muted"
+                    style="font-size: 0.85rem; font-variant-numeric: tabular-nums; min-width: 60px; text-align: center;">
+                    -
+                </span>
+            </div>
+
+            <div class="nav-actions">
+                <label for="file-upload" class="icon-btn" title="開啟檔案 / 支援多選">
+                    <i data-lucide="folder-open"></i>
+                </label>
+                <input type="file" id="file-upload" accept="image/*" multiple class="hidden">
+
+                <button id="btn-batch-toggle" class="icon-btn" title="批量處理清單"><i data-lucide="layers"></i></button>
+                <div class="divider"></div>
+
+                <select id="export-format" class="ui-select" title="選擇輸出格式">
+                    <option value="image/png">PNG</option>
+                    <option value="image/jpeg">JPEG</option>
+                    <option value="image/webp">WEBP</option>
+                </select>
+                <button id="btn-export" class="primary-btn" title="儲存當前圖片">
+                    <i data-lucide="download"></i> 儲存
+                </button>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <!-- Left Toolbar: Edit Tools -->
+            <aside class="sidebar tools-sidebar">
+                <div class="tool-group">
+                    <button class="tool-btn active" data-tool="select" title="平移/選取 (V)"><i
+                            data-lucide="mouse-pointer-2"></i></button>
+                    <button class="tool-btn" data-tool="crop" title="裁切 (C)"><i data-lucide="crop"></i></button>
+                    <button class="tool-btn" data-tool="pen" title="畫筆 (P)"><i data-lucide="pen-tool"></i></button>
+                    <button class="tool-btn" data-tool="rect" title="空心矩形 (R)"><i data-lucide="square"></i></button>
+                    <button class="tool-btn" data-tool="circle" title="空心圓形 (O)"><i data-lucide="circle"></i></button>
+                    <button class="tool-btn" data-tool="mosaic" title="馬賽克 (M)"><i data-lucide="grid-3x3"></i></button>
+                </div>
+
+                <div class="divider horizontal"></div>
+
+                <!-- dynamic attributes for current tool -->
+                <div class="tool-attributes" id="attr-panel">
+                    <div id="draw-attrs">
+                        <div class="attr-group">
+                            <label>尺寸 <span id="val-size">5px</span></label>
+                            <input type="range" id="tool-size" min="1" max="100" value="5">
+                        </div>
+                        <div class="attr-group">
+                            <label>顏色</label>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="tool-color" value="#eb4034">
+                            </div>
+                            <div class="color-palette" id="color-palette">
+                                <button class="palette-swatch" style="background-color: #eb4034;"
+                                    data-color="#eb4034"></button>
+                                <button class="palette-swatch" style="background-color: #3b82f6;"
+                                    data-color="#3b82f6"></button>
+                                <button class="palette-swatch" style="background-color: #10b981;"
+                                    data-color="#10b981"></button>
+                                <button class="palette-swatch" style="background-color: #f59e0b;"
+                                    data-color="#f59e0b"></button>
+                                <button class="palette-swatch" style="background-color: #8b5cf6;"
+                                    data-color="#8b5cf6"></button>
+                                <button class="palette-swatch" style="background-color: #ec4899;"
+                                    data-color="#ec4899"></button>
+                                <button class="palette-swatch" style="background-color: #ffffff;"
+                                    data-color="#ffffff"></button>
+                                <button class="palette-swatch" style="background-color: #000000;"
+                                    data-color="#000000"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="crop-attrs" class="hidden">
+                        <div class="attr-group">
+                            <label>裁切選取區</label>
+                            <p class="small-text text-muted mb-3 mt-2">縮放與平移圖片至中心方框內，然後按下確定。</p>
+                            <button id="btn-apply-crop" class="primary-btn w-full"><i data-lucide="check"></i>
+                                確定裁切</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Canvas Area -->
+            <section class="canvas-area" id="canvas-wrapper">
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon"><i data-lucide="image-plus"></i></div>
+                    <h2>開啟或拖放圖片至此</h2>
+                    <p>支援 Ctrl+V 貼上剪貼簿圖片、拖放多張圖片</p>
+                    <button class="secondary-btn" onclick="document.getElementById('file-upload').click()">瀏覽檔案</button>
+                </div>
+                <canvas id="editor-canvas" class="hidden"></canvas>
+            </section>
+
+            <!-- Right Sidebar: Properties & Adjustments -->
+            <aside class="sidebar properties-sidebar">
+                <div class="panel-section">
+                    <h3>影像調整</h3>
+                    <div class="adj-group">
+                        <label>
+                            <span>亮度</span>
+                            <input type="number" id="val-brightness" class="adj-number" min="-100" max="100" value="0">
+                        </label>
+                        <input type="range" id="adj-brightness" class="adj-slider" min="-100" max="100" value="0">
+                    </div>
+                    <div class="adj-group">
+                        <label>
+                            <span>對比度</span>
+                            <input type="number" id="val-contrast" class="adj-number" min="-100" max="100" value="0">
+                        </label>
+                        <input type="range" id="adj-contrast" class="adj-slider" min="-100" max="100" value="0">
+                    </div>
+                    <div class="adj-group">
+                        <label>
+                            <span>飽和度</span>
+                            <input type="number" id="val-saturation" class="adj-number" min="-100" max="100" value="0">
+                        </label>
+                        <input type="range" id="adj-saturation" class="adj-slider" min="-100" max="100" value="0">
+                    </div>
+                    <button id="btn-reset-adj" class="text-btn w-full mt-2">重置所有調整</button>
+                </div>
+
+                <div class="divider horizontal"></div>
+
+                <div class="panel-section">
+                    <h3>變形</h3>
+                    <div class="action-buttons-grid">
+                        <button id="btn-rotate-ccw" class="icon-text-btn" title="向左旋轉 90°"><i
+                                data-lucide="rotate-ccw"></i> 左轉</button>
+                        <button id="btn-rotate-cw" class="icon-text-btn" title="向右旋轉 90°"><i
+                                data-lucide="rotate-cw"></i> 右轉</button>
+                        <button id="btn-flip-h" class="icon-text-btn" title="水平翻轉"><i data-lucide="flip-horizontal"></i>
+                            水平</button>
+                        <button id="btn-flip-v" class="icon-text-btn" title="垂直翻轉"><i data-lucide="flip-vertical"></i>
+                            垂直</button>
+                    </div>
+                </div>
+
+                <div class="divider horizontal"></div>
+
+                <div class="panel-section">
+                    <h3>直接轉換格式</h3>
+                    <p class="small-text text-muted mb-3">不需載入畫布，直接將選定的檔案轉存為目標格式。</p>
+                    <button id="btn-direct-convert" class="secondary-btn w-full"><i data-lucide="refresh-cw"></i>
+                        選擇檔案並轉換</button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Batch Processing Panel (Floating Bottom) -->
+        <div id="batch-panel" class="batch-panel hidden">
+            <div class="batch-header">
+                <h4>批量處理清單 (<span id="batch-count">0</span>)</h4>
+                <button id="btn-close-batch" class="icon-btn-small"><i data-lucide="x"></i></button>
+            </div>
+            <div class="batch-list" id="batch-list">
+                <!-- Batch items will be injected here -->
+            </div>
+            <div class="batch-footer">
+                <button id="btn-batch-apply" class="primary-btn w-full"><i data-lucide="play"></i> 套用現有編輯與格式並下載</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initialize icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+    <!-- load JS library zip.js to compress batch into zip (optional, or we can just download batch files directly, use direct download for simplicity) -->
+    <script src="js/core.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/batch.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "photo-editor-pro",
+  "version": "1.0.0",
+  "description": "A web-based photo editor packaged as a desktop application.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "npx @electron/packager . \"Photo Editor Pro\" --platform=win32 --arch=x64 --out=dist --overwrite"
+  },
+  "build": {
+    "appId": "com.photoeditor.pro",
+    "productName": "Photo Editor Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon.ico"
+    }
+  },
+  "author": "Your Name",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
