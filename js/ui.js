@@ -1,4 +1,59 @@
 Object.assign(PhotoEditor.prototype, {
+    updateToolUI() {
+        const attrPanel = document.getElementById('attr-panel');
+        const drawGroup = document.getElementById('draw-attrs');
+        const cropGroup = document.getElementById('crop-attrs');
+
+        if (['pen', 'eraser', 'text', 'rect', 'rect-fill', 'circle', 'circle-fill', 'mosaic'].includes(this.activeTool)) {
+            attrPanel.classList.add('show');
+            if (drawGroup) {
+                drawGroup.classList.remove('hidden');
+                drawGroup.style.display = ''; // Show draw group
+            }
+            if (cropGroup) cropGroup.classList.add('hidden');
+
+            const colorGroup = document.getElementById('color-attr-group');
+            if (colorGroup) {
+                colorGroup.style.display = (this.activeTool === 'eraser' || this.activeTool === 'mosaic') ? 'none' : '';
+            }
+
+            const fontGroup = document.getElementById('text-font-group');
+            if (fontGroup) {
+                fontGroup.style.display = this.activeTool === 'text' ? '' : 'none';
+            }
+            if (typeof this.updateFlattenButtonVisibility === 'function') {
+                this.updateFlattenButtonVisibility();
+            }
+
+        } else if (this.activeTool === 'crop') {
+            attrPanel.classList.add('show');
+            if (cropGroup) cropGroup.style.display = ''; // Show crop group
+
+            if (!this.cropBox && this.image) {
+                this.fitToScreen();
+                this.cropBox = {
+                    x: this.panX,
+                    y: this.panY,
+                    width: this.image.width * this.scale,
+                    height: this.image.height * this.scale
+                };
+            }
+        } else if (this.selectedTextObject) {
+            attrPanel.classList.add('show');
+            const fontGroup = document.getElementById('text-font-group');
+            if (fontGroup) {
+                fontGroup.style.display = '';
+            }
+            if (typeof this.updateFlattenButtonVisibility === 'function') {
+                this.updateFlattenButtonVisibility();
+            }
+        } else if (this.activeTool === 'select') {
+            attrPanel.classList.remove('show');
+        } else {
+            attrPanel.classList.remove('show');
+        }
+    },
+
     bindEvents() {
         // File Upload
         const fileInput = document.getElementById('file-upload');
@@ -138,53 +193,11 @@ Object.assign(PhotoEditor.prototype, {
                     this.activeTool = toolName;
                 }
 
-                const attrPanel = document.getElementById('attr-panel');
-                const drawGroup = document.getElementById('draw-attrs');
-                const cropGroup = document.getElementById('crop-attrs');
-
-                if (['pen', 'eraser', 'text', 'rect', 'rect-fill', 'circle', 'circle-fill', 'mosaic'].includes(this.activeTool)) {
-                    attrPanel.classList.add('show');
-                    drawGroup.classList.remove('hidden');
-                    cropGroup.classList.add('hidden');
-                    drawGroup.style.display = ''; // Show draw group
-
-                    const colorGroup = document.getElementById('color-attr-group');
-                    if (colorGroup) {
-                        colorGroup.style.display = this.activeTool === 'eraser' ? 'none' : '';
-                    }
-
-                    const fontGroup = document.getElementById('text-font-group');
-                    if (fontGroup) {
-                        fontGroup.style.display = this.activeTool === 'text' ? '' : 'none';
-                    }
-                    this.updateFlattenButtonVisibility(); // Update visibility based on activeTool and selectedTextObject
-
-                } else if (this.activeTool === 'crop') {
-                    attrPanel.classList.add('show');
-                    cropGroup.style.display = ''; // Show crop group
-
-                    if (!this.cropBox && this.image) {
-                        this.fitToScreen();
-                        this.cropBox = {
-                            x: this.panX,
-                            y: this.panY,
-                            width: this.image.width * this.scale,
-                            height: this.image.height * this.scale
-                        };
-                    }
-                } else if (this.selectedTextObject) {
-                    // If a text object is selected, show text attributes even if text tool is not active
-                    attrPanel.classList.add('show');
-                    const fontGroup = document.getElementById('text-font-group');
-                    if (fontGroup) {
-                        fontGroup.style.display = '';
-                    }
-                    this.updateFlattenButtonVisibility();
-                }
+                this.updateToolUI();
 
                 // Brush Cursor Visibility
                 if (this.brushCursor) {
-                    if (this.activeTool === 'pen' || this.activeTool === 'eraser') {
+                    if (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic') {
                         this.brushCursor.classList.remove('hidden');
                         this.updateBrushCursorSize(); // Keep size synced
                     } else {
@@ -327,7 +340,52 @@ Object.assign(PhotoEditor.prototype, {
         document.getElementById('btn-redo').addEventListener('click', () => this.redo());
 
         // Save/Export
-        document.getElementById('btn-export').addEventListener('click', () => this.exportImage());
+        const exportPopover = document.getElementById('export-popover');
+        const exportFilenameInput = document.getElementById('export-filename');
+        const btnConfirmExport = document.getElementById('btn-confirm-export');
+        const btnExport = document.getElementById('btn-export');
+
+        btnExport.addEventListener('click', () => {
+            if (!this.image) return;
+
+            let defaultName = 'edited-photo';
+            if (this.currentFileName) {
+                const parts = this.currentFileName.split('.');
+                if (parts.length > 1) parts.pop();
+                defaultName = parts.join('.') + '_edited';
+            }
+            exportFilenameInput.value = defaultName;
+
+            if (exportPopover.classList.contains('hidden')) {
+                exportPopover.classList.remove('hidden');
+                exportFilenameInput.focus();
+                exportFilenameInput.select();
+            } else {
+                exportPopover.classList.add('hidden');
+            }
+        });
+
+        btnConfirmExport.addEventListener('click', () => {
+            const fileName = exportFilenameInput.value.trim() || 'edited-photo';
+            exportPopover.classList.add('hidden');
+            this.exportImage(fileName);
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (!exportPopover.classList.contains('hidden')) {
+                if (!exportPopover.contains(e.target) && !btnExport.contains(e.target)) {
+                    exportPopover.classList.add('hidden');
+                }
+            }
+        });
+
+        exportFilenameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                btnConfirmExport.click();
+            } else if (e.key === 'Escape') {
+                exportPopover.classList.add('hidden');
+            }
+        });
 
         // Batch toggle
         document.getElementById('btn-batch-toggle').addEventListener('click', () => {
@@ -368,7 +426,7 @@ Object.assign(PhotoEditor.prototype, {
 
         // Handle cursor visibility bounds
         this.canvas.addEventListener('mouseenter', () => {
-            if (this.brushCursor && (this.activeTool === 'pen' || this.activeTool === 'eraser') && this.image) {
+            if (this.brushCursor && (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic') && this.image) {
                 this.updateBrushCursorSize(); // Update size when entering
                 this.brushCursor.style.opacity = '1';
                 this.brushCursor.classList.remove('hidden');

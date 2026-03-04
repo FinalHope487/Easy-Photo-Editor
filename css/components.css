@@ -465,3 +465,60 @@ input[type="color"] {
 .canvas-text-input:focus {
     border: 1px dashed rgba(255, 255, 255, 0.9);
 }
+
+/* Export Popover */
+.export-popover {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 10px;
+    background: var(--bg-surface);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    display: flex;
+    gap: 8px;
+    z-index: 50;
+    opacity: 1;
+    transform: translateY(0);
+    transition: var(--transition);
+}
+
+.export-popover.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.ui-input-text {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    outline: none;
+    font-size: 0.9rem;
+    font-family: inherit;
+    width: 200px;
+}
+
+.ui-input-text:focus {
+    border-color: var(--accent);
+}
+
+.primary-btn-small {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.primary-btn-small:hover {
+    background: var(--accent-hover);
+}
