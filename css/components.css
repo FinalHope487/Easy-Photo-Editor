@@ -426,3 +426,42 @@ input[type="color"] {
     width: 64px;
     height: 64px;
 }
+
+/* Brush Cursor */
+.brush-cursor {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(-50%, -50%);
+    /* Center cursor over mouse pointer */
+    /* Inner white, outer black */
+    border: 1px solid white;
+    box-shadow: 0 0 0 1px black;
+}
+
+.brush-cursor.hidden {
+    display: none;
+}
+
+/* Floating Text Input for Text Tool */
+.canvas-text-input {
+    position: absolute;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    outline: none;
+    padding: 0;
+    margin: 0;
+    line-height: 1.2;
+    z-index: 50;
+    white-space: pre;
+    overflow: hidden;
+    resize: none;
+    min-width: 1em;
+    min-height: 1.2em;
+    transform-origin: top left;
+}
+
+.canvas-text-input:focus {
+    border: 1px dashed rgba(255, 255, 255, 0.9);
+}

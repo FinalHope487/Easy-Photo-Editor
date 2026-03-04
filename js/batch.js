@@ -60,6 +60,11 @@ Object.assign(PhotoEditor.prototype, {
 
                     ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
+                    if (this.originalModLayer && this.originalModLayer.width > 0 && this.originalModLayer.height > 0) {
+                        ctx.filter = 'none';
+                        ctx.drawImage(this.originalModLayer, -this.originalModLayer.width / 2, -this.originalModLayer.height / 2);
+                    }
+
                     tempCanvas.toBlob((blob) => {
                         if (blob) {
                             const url = URL.createObjectURL(blob);
