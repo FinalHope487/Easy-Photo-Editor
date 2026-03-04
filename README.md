@@ -11,6 +11,8 @@ Because many photo editing tools on the market require paid subscriptions, are f
 
 This is a feature-rich, web-based photo editor implemented using frontend technologies (HTML/CSS/JavaScript). It supports a variety of common image processing features, drawing tools, and batch processing.
 
+### Try it in your browser now! [Easy-Photo-Editer](https://finalhope487.github.io/Easy-Photo-Editor/)
+
 ### Main Features & Highlights
 
 #### 1. Image Import & Export
@@ -103,6 +105,8 @@ Packaged using **Electron** and **@electron/packager**.
 因為市面上的圖片編輯軟體很多都需要要求使用者課金訂閱或是廣告一堆，不然就是受限於網頁介面，網路慢用起來就非常痛苦，於是我做了一個簡易的線下圖片編輯器。
 
 這是一個功能豐富，基於前端技術（HTML/CSS/JavaScript）實作的網頁版圖片編輯器。它支援多種常見的影像處理功能、繪圖工具及批量處理。
+
+### 試用網頁版！ [Easy-Photo-Editer](https://finalhope487.github.io/Easy-Photo-Editor/)
 
 ### 主要功能與特色
 
