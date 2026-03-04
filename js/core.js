@@ -36,6 +36,20 @@ class PhotoEditor {
         this.startY = 0;
         this.drawingLayer = null; // Temp canvas for current drawing
         this.drawingCtx = null;
+        this.modLayer = null;
+        this.modCtx = null;
+        this.originalModLayer = null;
+        this.originalModCtx = null;
+        this.activeTextInput = null;
+
+        // Text Objects state
+        this.textObjects = [];
+        this.selectedTextObject = null;
+        this.draggingTextObject = null;
+        this.resizingTextObject = null;
+        this.resizeHandle = null; // 'tl' or 'br'
+        this.dragOffsetX = 0;
+        this.dragOffsetY = 0;
 
         // Crop state
         this.cropBox = null;
@@ -45,8 +59,13 @@ class PhotoEditor {
         this.history = [];
         this.historyIndex = -1;
 
+        this.historyIndex = -1;
+
         // Batch
         this.batchFiles = [];
+
+        // UI Enhancements
+        this.brushCursor = document.getElementById('brush-cursor');
 
         this.init();
     }
@@ -105,6 +124,10 @@ class PhotoEditor {
     setupDrawingLayer() {
         this.drawingLayer = document.createElement('canvas');
         this.drawingCtx = this.drawingLayer.getContext('2d');
+        this.modLayer = document.createElement('canvas');
+        this.modCtx = this.modLayer.getContext('2d', { willReadFrequently: true });
+        this.originalModLayer = document.createElement('canvas');
+        this.originalModCtx = this.originalModLayer.getContext('2d', { willReadFrequently: true });
     }
 
     loadImageFromFile(file) {
@@ -112,8 +135,14 @@ class PhotoEditor {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
+                this.currentFileName = file.name;
                 this.originalImage = img;
                 this.image = img;
+
+                this.originalModLayer.width = img.width;
+                this.originalModLayer.height = img.height;
+                this.originalModCtx.clearRect(0, 0, img.width, img.height);
+
                 // Reset adjustments
                 this.adjustments = { brightness: 0, contrast: 0, saturation: 0, rotation: 0, flipH: 1, flipV: 1 };
 
@@ -133,6 +162,7 @@ class PhotoEditor {
                 document.body.classList.add('has-image');
                 this.fitToScreen();
                 this.saveState();
+                if (typeof this.updateToolUI === 'function') this.updateToolUI();
             };
             img.src = e.target.result;
         };
@@ -161,6 +191,18 @@ class PhotoEditor {
             const dimLabel = document.getElementById('image-dimensions');
             if (dimLabel) dimLabel.innerText = `${this.image.width} × ${this.image.height}`;
         }
+        this.updateBrushCursorSize();
+    }
+
+    updateBrushCursorSize() {
+        if (!this.brushCursor) return;
+        const visualSize = this.toolSize * this.scale;
+
+        // Ensure at least 1px transparent center so the cursor is always a hollow ring
+        const finalSize = Math.max(visualSize, 1);
+
+        this.brushCursor.style.width = `${finalSize}px`;
+        this.brushCursor.style.height = `${finalSize}px`;
     }
 
     applyAdjustments() {
@@ -187,11 +229,24 @@ class PhotoEditor {
 
         ctx.drawImage(this.originalImage, -this.originalImage.width / 2, -this.originalImage.height / 2);
 
+        const modTempCanvas = document.createElement('canvas');
+        modTempCanvas.width = tempCanvas.width;
+        modTempCanvas.height = tempCanvas.height;
+        const modCtx = modTempCanvas.getContext('2d');
+        modCtx.translate(modTempCanvas.width / 2, modTempCanvas.height / 2);
+        modCtx.rotate(this.adjustments.rotation * Math.PI / 180);
+        modCtx.scale(this.adjustments.flipH, this.adjustments.flipV);
+        modCtx.drawImage(this.originalModLayer, -this.originalModLayer.width / 2, -this.originalModLayer.height / 2);
+
         const newImg = new Image();
         newImg.onload = () => {
             this.image = newImg;
             this.drawingLayer.width = newImg.width;
             this.drawingLayer.height = newImg.height;
+            this.modLayer.width = newImg.width;
+            this.modLayer.height = newImg.height;
+            this.modCtx.clearRect(0, 0, newImg.width, newImg.height);
+            this.modCtx.drawImage(modTempCanvas, 0, 0);
             this.render();
         };
         newImg.src = tempCanvas.toDataURL('image/png');
@@ -216,10 +271,80 @@ class PhotoEditor {
 
         this.ctx.drawImage(this.image, 0, 0);
 
-        // Draw drawing layer (active strokes/shapes)
-        if (this.drawingLayer.width > 0 && this.drawingLayer.height > 0) {
+        if (this.modLayer && this.modLayer.width > 0 && this.modLayer.height > 0) {
+            if (this.activeTool === 'eraser' && this.isDrawing) {
+                const temp = document.createElement('canvas');
+                temp.width = this.modLayer.width;
+                temp.height = this.modLayer.height;
+                const tempCtx = temp.getContext('2d');
+                tempCtx.drawImage(this.modLayer, 0, 0);
+                tempCtx.globalCompositeOperation = 'destination-out';
+                tempCtx.drawImage(this.drawingLayer, 0, 0);
+                this.ctx.drawImage(temp, 0, 0);
+            } else {
+                this.ctx.drawImage(this.modLayer, 0, 0);
+            }
+        }
+
+        // Draw drawing layer (active strokes/shapes) if not erasing
+        if (this.activeTool !== 'eraser' && this.drawingLayer && this.drawingLayer.width > 0 && this.drawingLayer.height > 0) {
             this.ctx.drawImage(this.drawingLayer, 0, 0);
         }
+
+        // Draw Text Objects
+        this.textObjects.forEach(obj => {
+            this.ctx.save();
+            this.ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+            this.ctx.fillStyle = obj.color;
+            this.ctx.textBaseline = 'top';
+
+            const lines = obj.text.split('\n');
+            const lineHeight = obj.fontSize * 1.2;
+
+            // Compensation offset to match textarea
+            const offsetY = obj.fontSize * 0.08 + (1);
+            const offsetX = 1;
+
+            let maxWidth = 0;
+            lines.forEach((line, index) => {
+                const metrics = this.ctx.measureText(line);
+                if (metrics.width > maxWidth) maxWidth = metrics.width;
+                if (!obj.isEditing) {
+                    this.ctx.fillText(line, obj.x + offsetX, obj.y + offsetY + (index * lineHeight));
+                }
+            });
+
+            obj.width = maxWidth;
+            obj.height = (lines.length * obj.fontSize * 1.2);
+
+            // Draw Selection Box
+            if (this.selectedTextObject === obj && !obj.isEditing) {
+                this.ctx.strokeStyle = '#007aff';
+                this.ctx.lineWidth = 1.5 / this.scale;
+                this.ctx.setLineDash([5 / this.scale, 5 / this.scale]);
+
+                const padding = 4 / this.scale;
+                this.ctx.strokeRect(
+                    obj.x - padding,
+                    obj.y - padding,
+                    obj.width + (padding * 2),
+                    obj.height + (padding * 2)
+                );
+
+                // Draw resize/move handles
+                this.ctx.setLineDash([]);
+                this.ctx.fillStyle = '#fff';
+                const hw = 3 / this.scale;
+
+                this.ctx.fillRect(obj.x - padding - hw, obj.y - padding - hw, hw * 2, hw * 2);
+                this.ctx.strokeRect(obj.x - padding - hw, obj.y - padding - hw, hw * 2, hw * 2);
+
+                this.ctx.fillRect(obj.x + obj.width + padding - hw, obj.y + obj.height + padding - hw, hw * 2, hw * 2);
+                this.ctx.strokeRect(obj.x + obj.width + padding - hw, obj.y + obj.height + padding - hw, hw * 2, hw * 2);
+            }
+
+            this.ctx.restore();
+        });
 
         this.ctx.restore();
 
@@ -362,6 +487,7 @@ class PhotoEditor {
 
     exportImage(fileName = 'edited-photo') {
         if (!this.image) return;
+
         const format = document.getElementById('export-format').value;
         const ext = format.split('/')[1];
 
@@ -371,8 +497,11 @@ class PhotoEditor {
         const ctx = tempCanvas.getContext('2d');
         ctx.drawImage(this.image, 0, 0);
 
-        // Include drawing layer
-        if (this.drawingLayer && this.drawingLayer.width > 0 && this.drawingLayer.height > 0) {
+        // Include modLayer and drawing layer
+        if (this.modLayer && this.modLayer.width > 0 && this.modLayer.height > 0) {
+            ctx.drawImage(this.modLayer, 0, 0);
+        }
+        if (this.activeTool !== 'eraser' && this.drawingLayer && this.drawingLayer.width > 0 && this.drawingLayer.height > 0) {
             ctx.drawImage(this.drawingLayer, 0, 0);
         }
 
