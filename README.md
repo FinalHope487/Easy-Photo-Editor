@@ -28,12 +28,15 @@ This is a feature-rich, web-based photo editor implemented using frontend techno
 
 #### 3. Toolbar (Tools)
 
-- **Crop**: Custom crop area with support for dragging corners to resize.
-- **Pen**: Freehand drawing with adjustable brush size and color.
+- **Pan/Select**: Default tool to pan the canvas and hide attribute panels for a better view (press `V`).
+- **Crop**: Custom crop area with support for dragging corners to resize, with an auto-apply feature and a confirm button (press `C`).
+- **Pen**: Freehand drawing with adjustable brush size and color (press `P`).
+- **Eraser**: Remove drawings or parts of the image with adjustable sizes (press `E`).
+- **Text**: Add dynamic text objects. Supports loading local fonts, adjusting colors and sizes. Text can be flattened onto the canvas or deleted (press `T`).
 - **Shape Drawing**:
   - **Rectangle**: Supports outline and solid modes (press `R` to toggle).
   - **Circle**: Supports outline and solid modes (press `O` to toggle).
-- **Mosaic**: Blur specified areas to protect privacy or create effects.
+- **Mosaic**: Blur specified areas to protect privacy or create effects (press `M`).
 
 #### 4. Image Adjustments
 
@@ -123,12 +126,15 @@ Packaged using **Electron** and **@electron/packager**.
 
 #### 3. 工具列 (Tools)
 
-- **裁切 (Crop)**：可自訂裁切範圍，並支援拖曳四角縮放。
-- **畫筆 (Pen)**：自由繪圖，可調整筆刷粗細與顏色。
+- **平移/選取 (Pan/Select)**：預設工具，用於平移畫布，並會自動隱藏屬性面板以提供更大視野 (可按 `V`)。
+- **裁切 (Crop)**：可自訂裁切範圍，並支援拖曳四角縮放、自動套用裁切與確定按鈕 (可按 `C`)。
+- **畫筆 (Pen)**：自由繪圖，可調整筆刷粗細與顏色 (可按 `P`)。
+- **橡皮擦 (Eraser)**：清除畫布上的繪圖或影像內容 (可按 `E`)。
+- **文字 (Text)**：新增動態文字物件，支援載入本機字型、調整顏色與大小，並可選擇合併至畫布或刪除文字 (可按 `T`)。
 - **形狀繪製**：
   - **矩形 (Rectangle)**：支援空心與實心模式 (可按 `R` 切換)。
   - **圓形 (Circle)**：支援空心與實心模式 (可按 `O` 切換)。
-- **馬賽克 (Mosaic)**：模糊化指定區域，保護隱私或製作特效。
+- **馬賽克 (Mosaic)**：模糊化指定區域，保護隱私或製作特效 (可按 `M`)。
 
 #### 4. 影像調整 (Adjustments)
 
