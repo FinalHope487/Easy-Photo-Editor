@@ -11,7 +11,7 @@ Because many photo editing tools on the market require paid subscriptions, are f
 
 This is a feature-rich, web-based photo editor implemented using frontend technologies (HTML/CSS/JavaScript). It supports a variety of common image processing features, drawing tools, and batch processing.
 
-### Try it in your browser now! [Easy-Photo-Editer](https://finalhope487.github.io/Easy-Photo-Editor/)
+### Try it in your browser now! [Easy-Photo-Editor](https://finalhope487.github.io/Easy-Photo-Editor/)
 
 ### Main Features & Highlights
 
