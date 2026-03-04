@@ -188,3 +188,7 @@ Packaged using **Electron** and **@electron/packager**.
 - Vanilla JavaScript (無依賴外部框架)
 - Lucide Icons (向量圖示)
 - Electron (桌面應用程式封裝)
+
+## License
+
+This project is licensed under the MIT License.
