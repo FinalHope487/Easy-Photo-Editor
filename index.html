@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Editor Pro</title>
+    <title>Easy Photo Editor</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
@@ -30,7 +30,7 @@
         <nav class="top-nav">
             <div class="logo">
                 <div class="logo-icon"><i data-lucide="aperture"></i></div>
-                <span>編輯器 Pro</span>
+                <span>Easy Photo Editor</span>
             </div>
 
             <div class="nav-center">
@@ -65,6 +65,12 @@
                 <button id="btn-export" class="primary-btn" title="儲存當前圖片">
                     <i data-lucide="download"></i> 儲存
                 </button>
+
+                <!-- Export Popover -->
+                <div id="export-popover" class="export-popover hidden">
+                    <input type="text" id="export-filename" class="ui-input-text" placeholder="輸入檔案名稱">
+                    <button id="btn-confirm-export" class="primary-btn-small">儲存</button>
+                </div>
             </div>
         </nav>
 
@@ -209,7 +215,7 @@
                     <h3>直接轉換格式</h3>
                     <p class="small-text text-muted mb-3">不需載入畫布，直接將選定的檔案轉存為目標格式。</p>
                     <button id="btn-direct-convert" class="secondary-btn w-full"><i data-lucide="refresh-cw"></i>
-                        選擇檔案並轉換</button>
+                        選擇檔案並轉換圖片格式</button>
                 </div>
             </aside>
         </main>

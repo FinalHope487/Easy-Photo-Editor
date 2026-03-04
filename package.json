@@ -1,5 +1,5 @@
 {
-  "name": "photo-editor-pro",
+  "name": "easy-photo-editor",
   "version": "1.0.0",
   "description": "A web-based photo editor packaged as a desktop application.",
   "main": "main.js",
@@ -8,12 +8,13 @@
     "build": "electron-builder --win"
   },
   "build": {
-    "appId": "com.photoeditor.pro",
-    "productName": "Photo Editor Pro",
+    "appId": "com.easyphotoeditor",
+    "productName": "Easy Photo Editor",
     "directories": {
       "output": "dist"
     },
     "win": {
+      "icon": "icon.ico",
       "target": [
         "nsis",
         "portable"

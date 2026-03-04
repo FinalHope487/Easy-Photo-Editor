@@ -89,7 +89,7 @@ Object.assign(PhotoEditor.prototype, {
                 if (fontSelect) fontSelect.value = clickedObject.fontFamily;
             }
 
-            this.updateFlattenButtonVisibility();
+            this.updateToolUI();
             this.render();
             return;
         }
@@ -97,7 +97,7 @@ Object.assign(PhotoEditor.prototype, {
         // If clicked outside any text object, deselect
         if (this.selectedTextObject) {
             this.selectedTextObject = null;
-            this.updateFlattenButtonVisibility();
+            this.updateToolUI();
             this.render();
         }
 
@@ -105,7 +105,7 @@ Object.assign(PhotoEditor.prototype, {
         if (this.activeTool === 'text') {
             // Create a new one at this position
             this._spawnTextEditor(e.clientX, e.clientY, null, clickCoords.x, clickCoords.y);
-            this.updateFlattenButtonVisibility();
+            this.updateToolUI();
             this.render();
             return;
         }
@@ -369,7 +369,7 @@ Object.assign(PhotoEditor.prototype, {
     },
 
     applyMosaicBrush(x, y) {
-        const size = this.toolSize * 5; // Mosaic block size
+        const size = this.toolSize; // Mosaic brush size (matches pen)
         if (x < 0 || y < 0 || x > this.image.width || y > this.image.height) return;
 
         // Get pixel data from actual image
@@ -396,7 +396,9 @@ Object.assign(PhotoEditor.prototype, {
         }
 
         this.drawingCtx.fillStyle = `rgb(${r / count}, ${g / count}, ${b / count})`;
-        this.drawingCtx.fillRect(startX, startY, mw, mh);
+        this.drawingCtx.beginPath();
+        this.drawingCtx.arc(x, y, size / 2, 0, 2 * Math.PI);
+        this.drawingCtx.fill();
     },
 
     mergeDrawingToImage() {
@@ -486,6 +488,7 @@ Object.assign(PhotoEditor.prototype, {
             this.activeTextInput.parentNode.removeChild(this.activeTextInput);
         }
         this.activeTextInput = null;
+        this.updateToolUI();
         this.render();
     },
 
@@ -568,7 +571,7 @@ Object.assign(PhotoEditor.prototype, {
         if (this.selectedTextObject && this.selectedTextObject.id === obj.id) {
             this.selectedTextObject = null;
         }
-        this.updateFlattenButtonVisibility();
+        this.updateToolUI();
         this.render();
         this.saveState();
     },
@@ -629,7 +632,7 @@ Object.assign(PhotoEditor.prototype, {
             this.selectedTextObject = null;
         }
 
-        this.updateFlattenButtonVisibility();
+        this.updateToolUI();
         this.render();
         this.saveState();
     }

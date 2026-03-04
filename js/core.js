@@ -135,6 +135,7 @@ class PhotoEditor {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
+                this.currentFileName = file.name;
                 this.originalImage = img;
                 this.image = img;
 
@@ -161,6 +162,7 @@ class PhotoEditor {
                 document.body.classList.add('has-image');
                 this.fitToScreen();
                 this.saveState();
+                if (typeof this.updateToolUI === 'function') this.updateToolUI();
             };
             img.src = e.target.result;
         };
@@ -485,6 +487,7 @@ class PhotoEditor {
 
     exportImage(fileName = 'edited-photo') {
         if (!this.image) return;
+
         const format = document.getElementById('export-format').value;
         const ext = format.split('/')[1];
 
