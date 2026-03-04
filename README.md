@@ -1,5 +1,98 @@
 # Easy Photo Editor
 
+## English Version
+
+This is a feature-rich, web-based photo editor implemented using frontend technologies (HTML/CSS/JavaScript). It supports a variety of common image processing features, drawing tools, and batch processing.
+
+## Main Features & Highlights
+
+### 1. Image Import & Export
+
+* **Multiple Import Methods**: Supports clicking to open files, Drag & Drop, and pasting from the clipboard (Ctrl+V).
+* **Image Saving**: Edited results can be exported as PNG, JPEG, or WEBP formats.
+* **Direct Conversion**: Batch convert image formats quickly without loading them onto the canvas.
+
+### 2. Basic View Operations
+
+* **Zoom & Pan**: Supports mouse wheel zooming, fit to screen, and drag panning.
+* **Shortcut Support**: Use shortcuts like `Ctrl+Z` (Undo), `Ctrl+Y` (Redo), and `V` (Select) to boost workflow efficiency.
+
+### 3. Toolbar (Tools)
+
+* **Crop**: Custom crop area with support for dragging corners to resize.
+* **Pen**: Freehand drawing with adjustable brush size and color.
+* **Shape Drawing**:
+  * **Rectangle**: Supports outline and solid modes (press `R` to toggle).
+  * **Circle**: Supports outline and solid modes (press `O` to toggle).
+* **Mosaic**: Blur specified areas to protect privacy or create effects.
+
+### 4. Image Adjustments
+
+* **Parameter Tweaks**: Real-time adjustment of image **Brightness**, **Contrast**, and **Saturation**.
+* **Transformations**:
+  * Rotate 90 degrees left/right.
+  * Flip horizontally/vertically.
+
+### 5. State Management
+
+* **History**: Comprehensive Undo / Redo mechanism to easily revert editing mistakes.
+
+### 6. Batch Processing
+
+* When importing multiple images at once, the system automatically creates a batch processing list.
+* You can adjust brightness, contrast, rotation, and export format on the first image, then click "Apply current edits and format and download". The system will automatically process and sequentially download all images in the list.
+
+---
+
+## Build & Compile as Standalone Application (.exe)
+
+Packaged using **Electron** and **@electron/packager**.
+
+### System Requirements
+
+* [Node.js](https://nodejs.org/) (Recommended version v18 or above)
+* npm (Installed with Node.js)
+
+### Installation & Build Steps
+
+1. **Install Dependencies**:
+    Open a terminal in the project root directory and run the following command to install Electron and packaging tools:
+
+    ```bash
+    npm install
+    ```
+
+2. **Local Development Test** (Optional, for development testing only):
+
+    ```bash
+    npm start
+    ```
+
+3. **Compile to .exe**:
+    Run the following command to start the build and packaging process:
+
+    ```bash
+    npm run build
+    ```
+
+    *The build process may take a few minutes, please be patient.*
+
+4. **Retrieve Compiled Files**:
+    After the build is complete, a `dist` folder will be automatically generated in the project directory. Inside the `dist/Photo Editor Pro-win32-x64` folder, you will find a standalone executable named `Photo Editor Pro.exe`. You can copy the entire folder to any Windows computer and double-click to use it directly.
+
+---
+
+**Tech Stack**:
+
+* HTML5 Canvas API
+* Vanilla JavaScript (No external framework dependencies)
+* Lucide Icons (Vector icons)
+* Electron (Desktop application packaging)
+
+---
+
+## 中文版
+
 這是一個功能豐富，基於前端技術（HTML/CSS/JavaScript）實作的網頁版圖片編輯器。它支援多種常見的影像處理功能、繪圖工具及批量處理。
 
 ## 主要功能與特色
