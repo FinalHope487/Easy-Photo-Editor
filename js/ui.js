@@ -1,4 +1,59 @@
 Object.assign(PhotoEditor.prototype, {
+    updateToolUI() {
+        const attrPanel = document.getElementById('attr-panel');
+        const drawGroup = document.getElementById('draw-attrs');
+        const cropGroup = document.getElementById('crop-attrs');
+
+        if (['pen', 'eraser', 'text', 'rect', 'rect-fill', 'circle', 'circle-fill', 'mosaic'].includes(this.activeTool)) {
+            attrPanel.classList.add('show');
+            if (drawGroup) {
+                drawGroup.classList.remove('hidden');
+                drawGroup.style.display = ''; // Show draw group
+            }
+            if (cropGroup) cropGroup.classList.add('hidden');
+
+            const colorGroup = document.getElementById('color-attr-group');
+            if (colorGroup) {
+                colorGroup.style.display = (this.activeTool === 'eraser' || this.activeTool === 'mosaic') ? 'none' : '';
+            }
+
+            const fontGroup = document.getElementById('text-font-group');
+            if (fontGroup) {
+                fontGroup.style.display = this.activeTool === 'text' ? '' : 'none';
+            }
+            if (typeof this.updateFlattenButtonVisibility === 'function') {
+                this.updateFlattenButtonVisibility();
+            }
+
+        } else if (this.activeTool === 'crop') {
+            attrPanel.classList.add('show');
+            if (cropGroup) cropGroup.style.display = ''; // Show crop group
+
+            if (!this.cropBox && this.image) {
+                this.fitToScreen();
+                this.cropBox = {
+                    x: this.panX,
+                    y: this.panY,
+                    width: this.image.width * this.scale,
+                    height: this.image.height * this.scale
+                };
+            }
+        } else if (this.selectedTextObject) {
+            attrPanel.classList.add('show');
+            const fontGroup = document.getElementById('text-font-group');
+            if (fontGroup) {
+                fontGroup.style.display = '';
+            }
+            if (typeof this.updateFlattenButtonVisibility === 'function') {
+                this.updateFlattenButtonVisibility();
+            }
+        } else if (this.activeTool === 'select') {
+            attrPanel.classList.remove('show');
+        } else {
+            attrPanel.classList.remove('show');
+        }
+    },
+
     bindEvents() {
         // File Upload
         const fileInput = document.getElementById('file-upload');
@@ -52,7 +107,7 @@ Object.assign(PhotoEditor.prototype, {
 
         // Zoom 
         const applyZoom = (zoomAmount, cx, cy) => {
-            if (!this.image) return;
+            if (!this.image || this.activeTextInput) return;
             const targetX = (cx - this.panX) / this.scale;
             const targetY = (cy - this.panY) / this.scale;
 
@@ -71,7 +126,7 @@ Object.assign(PhotoEditor.prototype, {
         };
 
         this.wrapper.addEventListener('wheel', (e) => {
-            if (!this.image) return;
+            if (!this.image || this.activeTextInput) return;
             e.preventDefault();
             const zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
             const rect = this.wrapper.getBoundingClientRect();
@@ -138,30 +193,20 @@ Object.assign(PhotoEditor.prototype, {
                     this.activeTool = toolName;
                 }
 
-                const attrPanel = document.getElementById('attr-panel');
-                const drawGroup = document.getElementById('draw-attrs');
-                const cropGroup = document.getElementById('crop-attrs');
+                this.updateToolUI();
 
-                if (['pen', 'rect', 'rect-fill', 'circle', 'circle-fill', 'mosaic'].includes(this.activeTool)) {
-                    attrPanel.classList.add('show');
-                    drawGroup.classList.remove('hidden');
-                    cropGroup.classList.add('hidden');
-                } else if (this.activeTool === 'crop') {
-                    attrPanel.classList.add('show');
-                    drawGroup.classList.add('hidden');
-                    cropGroup.classList.remove('hidden');
-
-                    if (!this.cropBox && this.image) {
-                        this.fitToScreen();
-                        this.cropBox = {
-                            x: this.panX,
-                            y: this.panY,
-                            width: this.image.width * this.scale,
-                            height: this.image.height * this.scale
-                        };
+                // Brush Cursor Visibility
+                if (this.brushCursor) {
+                    if (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic') {
+                        this.brushCursor.classList.remove('hidden');
+                        this.updateBrushCursorSize(); // Keep size synced
+                    } else {
+                        this.brushCursor.classList.add('hidden');
                     }
-                } else {
-                    attrPanel.classList.remove('show');
+                }
+
+                if (this.activeTextInput && this.activeTool !== 'text') {
+                    this.finalizeText();
                 }
 
                 this.canvas.className = `tool-${this.activeTool.replace('-fill', '')}`;
@@ -183,18 +228,72 @@ Object.assign(PhotoEditor.prototype, {
         document.getElementById('tool-size').addEventListener('input', (e) => {
             this.toolSize = parseInt(e.target.value);
             document.getElementById('val-size').innerText = `${this.toolSize}px`;
+            if (this.brushCursor && !this.brushCursor.classList.contains('hidden')) {
+                this.updateBrushCursorSize();
+            }
+            if (this.activeTextInput) {
+                this.activeTextInput.style.fontSize = `${this.toolSize * this.scale}px`;
+                this.activeTextInput.dispatchEvent(new Event('input')); // trigger resize
+            } else if (this.selectedTextObject) {
+                this.selectedTextObject.fontSize = this.toolSize;
+                this.render();
+            }
         });
         document.getElementById('tool-color').addEventListener('input', (e) => {
             this.toolColor = e.target.value;
+            if (this.activeTextInput) {
+                this.activeTextInput.style.color = this.toolColor;
+            } else if (this.selectedTextObject) {
+                this.selectedTextObject.color = this.toolColor;
+                this.render();
+            }
         });
+
+        const fontSelect = document.getElementById('text-font');
+        if (fontSelect) {
+            fontSelect.addEventListener('change', (e) => {
+                if (this.activeTextInput) {
+                    this.activeTextInput.style.fontFamily = e.target.value;
+                    this.activeTextInput.dispatchEvent(new Event('input'));
+                    this.activeTextInput.focus();
+                } else if (this.selectedTextObject) {
+                    this.selectedTextObject.fontFamily = e.target.value;
+                    this.render();
+                }
+            });
+        }
 
         document.querySelectorAll('.palette-swatch').forEach(swatch => {
             swatch.addEventListener('click', (e) => {
                 const color = e.target.dataset.color;
                 this.toolColor = color;
                 document.getElementById('tool-color').value = color;
+                if (this.activeTextInput) {
+                    this.activeTextInput.style.color = color;
+                } else if (this.selectedTextObject) {
+                    this.selectedTextObject.color = color;
+                    this.render();
+                }
             });
         });
+
+        // Flatten & Delete Text Logic
+        const btnFlatten = document.getElementById('btn-flatten-text');
+        if (btnFlatten) {
+            btnFlatten.addEventListener('click', () => {
+                if (this.selectedTextObject) {
+                    this.flattenTextObject(this.selectedTextObject);
+                }
+            });
+        }
+        const btnDelete = document.getElementById('btn-delete-text');
+        if (btnDelete) {
+            btnDelete.addEventListener('click', () => {
+                if (this.selectedTextObject) {
+                    this.deleteTextObject(this.selectedTextObject);
+                }
+            });
+        }
 
         // Adjustments
         const updateAdjustment = (id, prop) => {
@@ -241,7 +340,52 @@ Object.assign(PhotoEditor.prototype, {
         document.getElementById('btn-redo').addEventListener('click', () => this.redo());
 
         // Save/Export
-        document.getElementById('btn-export').addEventListener('click', () => this.exportImage());
+        const exportPopover = document.getElementById('export-popover');
+        const exportFilenameInput = document.getElementById('export-filename');
+        const btnConfirmExport = document.getElementById('btn-confirm-export');
+        const btnExport = document.getElementById('btn-export');
+
+        btnExport.addEventListener('click', () => {
+            if (!this.image) return;
+
+            let defaultName = 'edited-photo';
+            if (this.currentFileName) {
+                const parts = this.currentFileName.split('.');
+                if (parts.length > 1) parts.pop();
+                defaultName = parts.join('.') + '_edited';
+            }
+            exportFilenameInput.value = defaultName;
+
+            if (exportPopover.classList.contains('hidden')) {
+                exportPopover.classList.remove('hidden');
+                exportFilenameInput.focus();
+                exportFilenameInput.select();
+            } else {
+                exportPopover.classList.add('hidden');
+            }
+        });
+
+        btnConfirmExport.addEventListener('click', () => {
+            const fileName = exportFilenameInput.value.trim() || 'edited-photo';
+            exportPopover.classList.add('hidden');
+            this.exportImage(fileName);
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (!exportPopover.classList.contains('hidden')) {
+                if (!exportPopover.contains(e.target) && !btnExport.contains(e.target)) {
+                    exportPopover.classList.add('hidden');
+                }
+            }
+        });
+
+        exportFilenameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                btnConfirmExport.click();
+            } else if (e.key === 'Escape') {
+                exportPopover.classList.add('hidden');
+            }
+        });
 
         // Batch toggle
         document.getElementById('btn-batch-toggle').addEventListener('click', () => {
@@ -264,35 +408,72 @@ Object.assign(PhotoEditor.prototype, {
 
         // Canvas mouse events
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+
+        // Right click Context Menu for text objects
+        this.canvas.addEventListener('contextmenu', (e) => {
+            if (this.activeTool === 'text' && this.selectedTextObject && !this.activeTextInput) {
+                const coords = this.getCanvasCoords(e);
+                const obj = this.selectedTextObject;
+                if (coords.x >= obj.x && coords.x <= obj.x + obj.width &&
+                    coords.y >= obj.y && coords.y <= obj.y + obj.height) {
+                    e.preventDefault();
+                    if (confirm('是否將選取的文字合併至畫布？ (成為點陣圖)')) {
+                        this.flattenTextObject(obj);
+                    }
+                }
+            }
+        });
+
+        // Handle cursor visibility bounds
+        this.canvas.addEventListener('mouseenter', () => {
+            if (this.brushCursor && (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic') && this.image) {
+                this.updateBrushCursorSize(); // Update size when entering
+                this.brushCursor.style.opacity = '1';
+                this.brushCursor.classList.remove('hidden');
+            }
+        });
+        this.canvas.addEventListener('mouseleave', () => {
+            if (this.brushCursor) {
+                this.brushCursor.style.opacity = '0';
+                this.brushCursor.classList.add('hidden');
+            }
+        });
+
         window.addEventListener('mousemove', this.onMouseMove.bind(this));
         window.addEventListener('mouseup', this.onMouseUp.bind(this));
 
-        // Keyboard Shortcuts
-        window.addEventListener('keydown', (e) => {
-            // Ignore if typing in an input
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        // Global Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (this.activeTextInput) return;
 
-            const isCtrl = e.ctrlKey || e.metaKey;
+            // Delete selected text object
+            if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTextObject) {
+                this.deleteTextObject(this.selectedTextObject);
+                e.preventDefault();
+                return;
+            }
 
             // Undo / Redo
-            if (isCtrl && e.key.toLowerCase() === 'z') {
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
                 if (e.shiftKey) {
                     this.redo();
                 } else {
                     this.undo();
                 }
-            } else if (isCtrl && e.key.toLowerCase() === 'y') {
+            } else if (e.ctrlKey && e.key.toLowerCase() === 'y') {
                 e.preventDefault();
                 this.redo();
             }
             // Tool Shortcuts
-            else if (!isCtrl && !e.altKey && !e.shiftKey) {
+            else if (!e.ctrlKey && !e.altKey && !e.shiftKey) {
                 const key = e.key.toLowerCase();
                 const toolMap = {
                     'v': 'select',
                     'c': 'crop',
                     'p': 'pen',
+                    'e': 'eraser',
+                    't': 'text',
                     'r': 'rect',
                     'o': 'circle',
                     'm': 'mosaic'

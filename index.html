@@ -4,13 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Editor Pro</title>
+    <title>Easy Photo Editor</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/utilities.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -27,7 +30,7 @@
         <nav class="top-nav">
             <div class="logo">
                 <div class="logo-icon"><i data-lucide="aperture"></i></div>
-                <span>編輯器 Pro</span>
+                <span>Easy Photo Editor</span>
             </div>
 
             <div class="nav-center">
@@ -62,6 +65,12 @@
                 <button id="btn-export" class="primary-btn" title="儲存當前圖片">
                     <i data-lucide="download"></i> 儲存
                 </button>
+
+                <!-- Export Popover -->
+                <div id="export-popover" class="export-popover hidden">
+                    <input type="text" id="export-filename" class="ui-input-text" placeholder="輸入檔案名稱">
+                    <button id="btn-confirm-export" class="primary-btn-small">儲存</button>
+                </div>
             </div>
         </nav>
 
@@ -73,6 +82,8 @@
                             data-lucide="mouse-pointer-2"></i></button>
                     <button class="tool-btn" data-tool="crop" title="裁切 (C)"><i data-lucide="crop"></i></button>
                     <button class="tool-btn" data-tool="pen" title="畫筆 (P)"><i data-lucide="pen-tool"></i></button>
+                    <button class="tool-btn" data-tool="eraser" title="橡皮擦 (E)"><i data-lucide="eraser"></i></button>
+                    <button class="tool-btn" data-tool="text" title="文字 (T)"><i data-lucide="type"></i></button>
                     <button class="tool-btn" data-tool="rect" title="空心矩形 (R)"><i data-lucide="square"></i></button>
                     <button class="tool-btn" data-tool="circle" title="空心圓形 (O)"><i data-lucide="circle"></i></button>
                     <button class="tool-btn" data-tool="mosaic" title="馬賽克 (M)"><i data-lucide="grid-3x3"></i></button>
@@ -83,11 +94,31 @@
                 <!-- dynamic attributes for current tool -->
                 <div class="tool-attributes" id="attr-panel">
                     <div id="draw-attrs">
+                        <div class="attr-group" id="text-font-group" style="display: none;">
+                            <label>字型</label>
+                            <select id="text-font" class="ui-select"
+                                style="width: 100%; margin-bottom: 8px; font-size: 0.9rem; padding: 4px;"></select>
+                            <button id="btn-load-fonts" class="secondary-btn hidden"
+                                style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"><i
+                                    data-lucide="sparkles"
+                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                                載入本機字型</button>
+                            <button id="btn-flatten-text" class="primary-btn hidden"
+                                style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"
+                                title="將選取的文字合併至畫布"><i data-lucide="layers"
+                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                                ⚓ 合併至畫布</button>
+                            <button id="btn-delete-text" class="secondary-btn hidden"
+                                style="width: 100%; font-size: 0.8rem; padding: 4px; border-radius: 4px; color: #ff4d4f; border-color: rgba(255, 77, 79, 0.3);"
+                                title="刪除選取的文字"><i data-lucide="trash-2"
+                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                                🗑️ 刪除文字</button>
+                        </div>
                         <div class="attr-group">
                             <label>尺寸 <span id="val-size">5px</span></label>
                             <input type="range" id="tool-size" min="1" max="100" value="5">
                         </div>
-                        <div class="attr-group">
+                        <div class="attr-group" id="color-attr-group">
                             <label>顏色</label>
                             <div class="color-picker-wrapper">
                                 <input type="color" id="tool-color" value="#eb4034">
@@ -184,7 +215,7 @@
                     <h3>直接轉換格式</h3>
                     <p class="small-text text-muted mb-3">不需載入畫布，直接將選定的檔案轉存為目標格式。</p>
                     <button id="btn-direct-convert" class="secondary-btn w-full"><i data-lucide="refresh-cw"></i>
-                        選擇檔案並轉換</button>
+                        選擇檔案並轉換圖片格式</button>
                 </div>
             </aside>
         </main>
@@ -204,11 +235,14 @@
         </div>
     </div>
 
+    <!-- Brush Cursor Overlay -->
+    <div id="brush-cursor" class="brush-cursor hidden"></div>
+
     <!-- Initialize icons -->
     <script>
         lucide.createIcons();
     </script>
-    <!-- load JS library zip.js to compress batch into zip (optional, or we can just download batch files directly, use direct download for simplicity) -->
+    <script src="js/fonts.js"></script>
     <script src="js/core.js"></script>
     <script src="js/tools.js"></script>
     <script src="js/history.js"></script>

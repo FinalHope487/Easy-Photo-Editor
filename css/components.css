@@ -426,3 +426,99 @@ input[type="color"] {
     width: 64px;
     height: 64px;
 }
+
+/* Brush Cursor */
+.brush-cursor {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(-50%, -50%);
+    /* Center cursor over mouse pointer */
+    /* Inner white, outer black */
+    border: 1px solid white;
+    box-shadow: 0 0 0 1px black;
+}
+
+.brush-cursor.hidden {
+    display: none;
+}
+
+/* Floating Text Input for Text Tool */
+.canvas-text-input {
+    position: absolute;
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    outline: none;
+    padding: 0;
+    margin: 0;
+    line-height: 1.2;
+    z-index: 50;
+    white-space: pre;
+    overflow: hidden;
+    resize: none;
+    min-width: 1em;
+    min-height: 1.2em;
+    transform-origin: top left;
+}
+
+.canvas-text-input:focus {
+    border: 1px dashed rgba(255, 255, 255, 0.9);
+}
+
+/* Export Popover */
+.export-popover {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 10px;
+    background: var(--bg-surface);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    display: flex;
+    gap: 8px;
+    z-index: 50;
+    opacity: 1;
+    transform: translateY(0);
+    transition: var(--transition);
+}
+
+.export-popover.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.ui-input-text {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    outline: none;
+    font-size: 0.9rem;
+    font-family: inherit;
+    width: 200px;
+}
+
+.ui-input-text:focus {
+    border-color: var(--accent);
+}
+
+.primary-btn-small {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.primary-btn-small:hover {
+    background: var(--accent-hover);
+}

@@ -46,6 +46,11 @@
     gap: 8px;
 }
 
+.nav-actions {
+    position: relative;
+    /* For the export popover */
+}
+
 #zoom-level {
     font-size: 0.85rem;
     color: var(--text-muted);
