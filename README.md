@@ -85,7 +85,7 @@ Packaged using **Electron** and **@electron/packager**.
     *The build process may take a few minutes, please be patient.*
 
 4. **Retrieve Compiled Files**:
-    After the build is complete, a `dist` folder will be automatically generated in the project directory. Inside the `dist/Photo Editor Pro-win32-x64` folder, you will find a standalone executable named `Photo Editor Pro.exe`. You can copy the entire folder to any Windows computer and double-click to use it directly.
+    After the build is complete, a `dist` folder will be automatically generated in the project directory. Inside it, you will find a standalone executable (e.g., `Photo Editor Pro 1.0.0.exe` or similar portable `.exe` file). This is a true single executable file; you can upload or share this specific file directly, and others can download and run it without needing any other folders or `.dll` files.
 
 ---
 
@@ -178,7 +178,7 @@ Packaged using **Electron** and **@electron/packager**.
     *編譯過程可能需要幾分鐘的時間，請耐心等候。*
 
 4. **取得編譯完成的檔案**:
-    編譯完成後，專案目錄中會自動生成一個 `dist` 資料夾。在 `dist/Photo Editor Pro-win32-x64` 資料夾中有名為 `Photo Editor Pro.exe` 的獨立免安裝執行檔。將整個資料夾複製到任何 Windows 電腦上即可直接點擊使用。
+    編譯完成後，專案目錄中會自動生成一個 `dist` 資料夾。在裡面您可以找到一個獨立的免安裝執行檔 (例如 `Photo Editor Pro 1.0.0.exe`)。這是一個真正的單一執行檔，您可以直接上傳或分享這個檔案，其他人下載後點擊即可直接使用，不需附帶任何其他資料夾或 `.dll` 檔案。
 
 ---
 
