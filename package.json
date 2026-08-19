@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "test": "node tests/run.js"
+    "test": "node tests/run.js",
+    "test:webkit": "node tests/webkit/run.js",
+    "test:pages": "node tests/pages-smoke.js"
   },
   "build": {
     "appId": "com.easyphotoeditor",
