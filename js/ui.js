@@ -1,4 +1,19 @@
 Object.assign(PhotoEditor.prototype, {
+    /** 同一個滑桿在文字工具下代表字級、其餘工具下代表筆刷粗細，範圍也不同。 */
+    syncSizeSlider() {
+        const slider = document.getElementById('tool-size');
+        const label = document.getElementById('val-size');
+        if (!slider) return;
+        const isText = this.activeTool === 'text';
+        const value = isText ? this.currentTextSize() : this.toolSize;
+        slider.min = isText ? 8 : 1;
+        // 大圖需要大字級：上限跟著圖片高度走，否則 100px 的字在 4000px 的圖上還是小
+        slider.max = isText && this.image
+            ? Math.max(100, Math.round(this.image.height / 2)) : 100;
+        slider.value = value;
+        if (label) label.innerText = `${Math.round(value)}px`;
+    },
+
     updateToolUI() {
         const attrPanel = document.getElementById('attr-panel');
         const drawGroup = document.getElementById('draw-attrs');
@@ -21,6 +36,7 @@ Object.assign(PhotoEditor.prototype, {
             if (fontGroup) {
                 fontGroup.style.display = this.activeTool === 'text' ? '' : 'none';
             }
+            this.syncSizeSlider();
             if (typeof this.updateFlattenButtonVisibility === 'function') {
                 this.updateFlattenButtonVisibility();
             }
@@ -241,16 +257,25 @@ Object.assign(PhotoEditor.prototype, {
 
         // Tool Attributes
         document.getElementById('tool-size').addEventListener('input', (e) => {
-            this.toolSize = parseInt(e.target.value);
-            document.getElementById('val-size').innerText = `${this.toolSize}px`;
+            const size = parseInt(e.target.value);
+            document.getElementById('val-size').innerText = `${size}px`;
+            // 這個滑桿在文字情境下調的是字級，不能寫進筆刷粗細——否則調完字級
+            // 切回筆刷會發現筆刷也被改掉了
+            const isTextContext = this.activeTool === 'text' ||
+                this.activeTextInput || this.selectedTextObject;
+            if (isTextContext) {
+                this.textSize = size;
+            } else {
+                this.toolSize = size;
+            }
             if (this.brushCursor && !this.brushCursor.classList.contains('hidden')) {
                 this.updateBrushCursorSize();
             }
             if (this.activeTextInput) {
-                this.activeTextInput.style.fontSize = `${this.toolSize * this.scale}px`;
+                this.activeTextInput.style.fontSize = `${size * this.scale}px`;
                 this.activeTextInput.dispatchEvent(new Event('input')); // trigger resize
             } else if (this.selectedTextObject) {
-                this.selectedTextObject.fontSize = this.toolSize;
+                this.selectedTextObject.fontSize = size;
                 this.render();
             }
         });

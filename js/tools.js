@@ -233,7 +233,7 @@ Object.assign(PhotoEditor.prototype, {
                 // Sync sidebar
                 document.getElementById('tool-size').value = clickedObject.fontSize;
                 document.getElementById('val-size').innerText = `${Math.round(clickedObject.fontSize)}px`;
-                this.toolSize = clickedObject.fontSize;
+                this.textSize = clickedObject.fontSize;
                 document.getElementById('tool-color').value = clickedObject.color;
                 this.toolColor = clickedObject.color;
                 const fontSelect = document.getElementById('text-font');
@@ -349,7 +349,7 @@ Object.assign(PhotoEditor.prototype, {
             // Update UI
             document.getElementById('tool-size').value = newSize;
             document.getElementById('val-size').innerText = `${Math.round(newSize)}px`;
-            this.toolSize = newSize;
+            this.textSize = newSize;
 
             this.render();
             return;
@@ -606,7 +606,7 @@ Object.assign(PhotoEditor.prototype, {
         const x = parseFloat(this.activeTextInput.dataset.canvasX);
         const y = parseFloat(this.activeTextInput.dataset.canvasY);
         const fontFamily = this.activeTextInput.style.fontFamily || 'Arial';
-        const fontSize = this.toolSize;
+        const fontSize = this.currentTextSize();
         const color = this.activeTextInput.style.color || '#000';
         const editingId = this.activeTextInput.dataset.isEditingId;
 
@@ -661,7 +661,7 @@ Object.assign(PhotoEditor.prototype, {
         input.className = 'canvas-text-input';
 
         const fontFamily = existingObj ? existingObj.fontFamily : (document.getElementById('text-font') ? document.getElementById('text-font').value : 'Arial, sans-serif');
-        const fontSize = existingObj ? existingObj.fontSize : this.toolSize;
+        const fontSize = existingObj ? existingObj.fontSize : this.currentTextSize();
         const color = existingObj ? existingObj.color : this.toolColor;
 
         input.style.fontFamily = fontFamily;

@@ -123,5 +123,54 @@ module.exports = {
                 assert(visible.del, '刪除文字按鈕沒出現');
             },
         },
+        {
+            // 字級與筆刷粗細共用一個值時，預設 5px 打出來的字在 400×300 的圖上
+            // 只有 13×6 px，手機上等於看不見。
+            name: '打字的預設字級相對圖片大小是看得見的',
+            viewports: ['desktop', 'mobile'],
+            run: async (t, assert) => {
+                await t.loadImage(400, 300);
+                const obj = await makeText(t, 'Aa');
+                assert.atLeast(obj.fontSize, 300 / 20,
+                    `預設字級太小：${obj.fontSize}px（圖高 300px，至少要 ${300 / 20}px 才看得見）`);
+                assert.atMost(obj.fontSize, 300 / 5,
+                    `預設字級太大：${obj.fontSize}px（圖高 300px）`);
+            },
+        },
+        {
+            // 固定的預設值（例如一律 32px）在大圖上一樣看不見，要跟著圖片大小走
+            name: '大圖的預設字級跟著放大',
+            viewports: ['desktop'],
+            run: async (t, assert) => {
+                await t.loadImage(2000, 1500);
+                const obj = await makeText(t, 'Aa');
+                assert.atLeast(obj.fontSize, 1500 / 20,
+                    `2000×1500 的圖上預設字級只有 ${obj.fontSize}px，等比例來說看不見`);
+            },
+        },
+        {
+            // 筆刷粗細 5px 是合理的，字級不是。兩者共用一個值才是問題所在。
+            name: '調整字級不會改到筆刷粗細',
+            viewports: ['desktop'],
+            run: async (t, assert) => {
+                await t.loadImage(400, 300);
+
+                await t.tapSelector('.tool-btn[data-tool="pen"]');
+                const penBefore = await t.eval('window.editor.toolSize');
+
+                await t.tapSelector('.tool-btn[data-tool="text"]');
+                await t.eval(`(() => { const s = document.getElementById('tool-size');
+                    s.value = 60; s.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+
+                await t.tapSelector('.tool-btn[data-tool="pen"]');
+                const penAfter = await t.eval('window.editor.toolSize');
+                assert.equal(penAfter, penBefore,
+                    `改字級把筆刷粗細也改掉了（${penBefore} → ${penAfter}）`);
+
+                const shown = await t.eval(`document.getElementById('tool-size').value`);
+                assert.equal(Number(shown), penBefore,
+                    `切回筆刷後滑桿顯示的是字級（顯示 ${shown}，筆刷是 ${penBefore}）`);
+            },
+        },
     ],
 };
