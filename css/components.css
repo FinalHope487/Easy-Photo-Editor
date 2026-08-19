@@ -201,6 +201,9 @@ button {
     position: absolute;
     left: 70px;
     top: 60px;
+    /* 面板與 .canvas-area 是同層的定位元素，畫布在 DOM 裡排在後面。
+       不給層級的話畫布會蓋在面板上，「確定裁切」按鈕就永遠按不到。 */
+    z-index: 20;
     background: var(--bg-surface);
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border-color);

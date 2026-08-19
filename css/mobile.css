@@ -1,0 +1,362 @@
+/* 手機／平板版面。
+   斷點 900px：820px 的平板走這一套，1280px 的桌機維持原本的左右側欄。
+   這裡只改版面與觸控尺寸，色票、圓角、陰影、模糊全部沿用 base.css 的變數。 */
+
+/* 桌機：手機專用控制項不出現 */
+.mobile-only {
+    display: none;
+}
+
+.mobile-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 28;
+    opacity: 1;
+    transition: opacity 0.25s;
+}
+
+.mobile-scrim.hidden {
+    display: none !important;
+}
+
+/* 匯出視窗：檔名與格式並排成欄位 */
+.export-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.export-field-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.export-popover {
+    align-items: flex-end;
+}
+
+.export-popover .ui-select {
+    height: 37px;
+}
+
+/* 觸控裝置：hover 效果會「黏住」，關掉位移類的 hover */
+@media (hover: none) {
+
+    .tool-btn:hover,
+    .primary-btn:hover,
+    .palette-swatch:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 900px) {
+
+    /* 手機瀏覽器的網址列會吃掉 100vh，用 dvh 才是真的可視高度 */
+    body {
+        height: 100vh;
+        height: 100dvh;
+        overscroll-behavior: none;
+    }
+
+    .mobile-only {
+        display: flex;
+    }
+
+    /* ---- 頂列：只留最常用的，其餘移到工具列或面板 ---- */
+    .top-nav {
+        height: 56px;
+        padding: 0 8px;
+        gap: 4px;
+    }
+
+    .logo span {
+        display: none;
+    }
+
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* 縮放改用雙指手勢，按鈕與百分比讀數在小螢幕上不划算 */
+    #btn-zoom-in,
+    #btn-zoom-out,
+    #zoom-level,
+    #image-dimensions,
+    .nav-center .divider {
+        display: none;
+    }
+
+    .nav-center,
+    .nav-actions {
+        gap: 2px;
+    }
+
+    .top-nav .icon-btn,
+    .top-nav label.icon-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* 8 顆工具 + 頂列全部要塞進 390px，儲存鈕收成純圖示（有 aria-label） */
+    #btn-export {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+    }
+
+    #btn-export .btn-label {
+        display: none;
+    }
+
+    .mobile-only.icon-btn {
+        display: flex;
+    }
+
+    /* ---- 主區：畫布吃滿，底部留給工具列 ---- */
+    .main-content {
+        position: relative;
+        padding-bottom: 64px;
+    }
+
+    /* ---- 工具列：貼底的橫向滑動列 ---- */
+    .sidebar.tools-sidebar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        height: 64px;
+        flex-direction: row;
+        align-items: center;
+        padding: 0 8px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+        z-index: 26;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .sidebar.tools-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tools-sidebar .tool-group {
+        flex-direction: row;
+        width: auto;
+        gap: 4px;
+        flex: 0 0 auto;
+    }
+
+    .tools-sidebar .divider.horizontal {
+        width: 1px;
+        height: 28px;
+        flex: 0 0 auto;
+        margin: 0 4px;
+    }
+
+    .tool-btn {
+        width: 44px;
+        height: 48px;
+        flex: 0 0 auto;
+    }
+
+    .tool-btn.active {
+        box-shadow: inset 0 -2px 0 var(--accent);
+    }
+
+    /* 8 顆 48px 的工具 + 間距要塞得下 390px：48*8 + 3*7 = 405 → 用 44px */
+    .tools-sidebar .tool-group {
+        gap: 3px;
+    }
+
+    /* ---- 工具屬性：浮在工具列上方的面板，不再貼著左側欄 ---- */
+    .tool-attributes {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 72px;
+        top: auto;
+        width: auto;
+        /* 面板真的浮在畫布上面（見 index.html 的搬移說明），所以高度必須留住畫布中段，
+           不然選了文字或筆刷之後，就再也點不到圖的中心。內容超過就在面板內捲。 */
+        max-height: 32vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        transform: translateY(12px);
+        z-index: 27;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .tool-attributes.show {
+        transform: translateY(0);
+    }
+
+    /* ---- 影像調整：從底部升起的 sheet ---- */
+    .sidebar.properties-sidebar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: auto;
+        max-height: 72vh;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        transform: translateY(101%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 30;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        box-shadow: var(--shadow);
+    }
+
+    body.props-open .sidebar.properties-sidebar {
+        transform: translateY(0);
+    }
+
+    .sheet-handle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px 0 12px;
+        flex: 0 0 auto;
+    }
+
+    .sheet-grip {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--border-color);
+        margin: 4px auto;
+    }
+
+    .sheet-handle .icon-btn-small {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+    }
+
+    /* 調整項目在觸控下要更好按 */
+    .adj-slider {
+        height: 28px;
+    }
+
+    .adj-number {
+        width: 60px;
+        padding: 6px 4px;
+        font-size: 1rem;
+    }
+
+    .icon-text-btn {
+        padding: 14px 8px;
+        min-height: 60px;
+    }
+
+    .palette-swatch {
+        min-height: 40px;
+    }
+
+    input[type="range"] {
+        height: 28px;
+        background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        width: 26px;
+        height: 26px;
+        margin-top: -11px;
+    }
+
+    /* ---- 批量處理：整寬 sheet，不再固定在右側欄旁邊 ---- */
+    .batch-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 72px;
+        width: auto;
+        max-height: 50vh;
+        z-index: 27;
+    }
+
+    .batch-item-name {
+        max-width: none;
+        flex: 1;
+        margin-right: 8px;
+    }
+
+    #btn-close-batch {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* ---- 匯出視窗：改成整寬，不然 200px 的輸入框會超出畫面 ---- */
+    .export-popover {
+        position: fixed;
+        top: 60px;
+        left: 8px;
+        right: 8px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        z-index: 40;
+    }
+
+    .export-popover .ui-input-text {
+        width: 100%;
+        font-size: 16px;
+        /* < 16px 會讓 iOS Safari 聚焦時自動放大整頁 */
+    }
+
+    .export-popover .ui-select {
+        width: 100%;
+        font-size: 16px;
+        height: auto;
+        padding: 10px 12px;
+    }
+
+    .export-popover .primary-btn-small {
+        padding: 12px 16px;
+        font-size: 1rem;
+    }
+
+    /* ---- 空狀態 ---- */
+    .empty-state {
+        margin: 16px;
+        padding: 24px 16px;
+    }
+
+    .empty-state h2 {
+        font-size: 1.1rem;
+    }
+
+    .empty-state p {
+        font-size: 0.85rem;
+    }
+
+    /* 觸控裝置沒有 hover，tooltip 永遠不會出現，別佔位 */
+    .dynamic-tooltip {
+        display: none;
+    }
+}
+
+/* 極窄機型（iPhone SE 320px 等）：工具列改成可橫向滑動，不硬塞 */
+@media (max-width: 380px) {
+    .tools-sidebar .tool-group {
+        gap: 2px;
+    }
+
+    .tool-btn {
+        width: 40px;
+    }
+}

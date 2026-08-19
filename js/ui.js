@@ -27,7 +27,13 @@ Object.assign(PhotoEditor.prototype, {
 
         } else if (this.activeTool === 'crop') {
             attrPanel.classList.add('show');
-            if (cropGroup) cropGroup.style.display = ''; // Show crop group
+            // `.hidden` 是 display:none !important，光設 style.display 蓋不掉它，
+            // 「確定裁切」按鈕會永遠是 0×0。必須把 class 拿掉。
+            if (cropGroup) {
+                cropGroup.classList.remove('hidden');
+                cropGroup.style.display = '';
+            }
+            if (drawGroup) drawGroup.classList.add('hidden');
 
             if (!this.cropBox && this.image) {
                 this.fitToScreen();
@@ -40,6 +46,13 @@ Object.assign(PhotoEditor.prototype, {
             }
         } else if (this.selectedTextObject) {
             attrPanel.classList.add('show');
+            if (drawGroup) {
+                drawGroup.classList.remove('hidden');
+                drawGroup.style.display = '';
+            }
+            if (cropGroup) cropGroup.classList.add('hidden');
+            const colorGroup = document.getElementById('color-attr-group');
+            if (colorGroup) colorGroup.style.display = '';
             const fontGroup = document.getElementById('text-font-group');
             if (fontGroup) {
                 fontGroup.style.display = '';
@@ -154,8 +167,8 @@ Object.assign(PhotoEditor.prototype, {
             }
         });
 
-        // Tools
-        document.querySelectorAll('.tool-btn').forEach(btn => {
+        // Tools（只綁真的工具鈕；#btn-props-toggle 也用 .tool-btn 樣式但沒有 data-tool）
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const target = e.currentTarget;
                 const toolName = target.dataset.tool;
@@ -188,16 +201,18 @@ Object.assign(PhotoEditor.prototype, {
                         tooltipEl.innerText = target.getAttribute('data-tooltip');
                     }
                 } else {
-                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
                     target.classList.add('active');
                     this.activeTool = toolName;
                 }
 
                 this.updateToolUI();
 
-                // Brush Cursor Visibility
+                // Brush Cursor Visibility（觸控裝置沒有游標可以跟，顯示了只會卡住不動）
+                const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
                 if (this.brushCursor) {
-                    if (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic') {
+                    if (hasFinePointer &&
+                        (this.activeTool === 'pen' || this.activeTool === 'eraser' || this.activeTool === 'mosaic')) {
                         this.brushCursor.classList.remove('hidden');
                         this.updateBrushCursorSize(); // Keep size synced
                     } else {
@@ -387,6 +402,22 @@ Object.assign(PhotoEditor.prototype, {
             }
         });
 
+        // 手機版影像調整 bottom sheet
+        const scrim = document.getElementById('mobile-scrim');
+        const setPropsOpen = (open) => {
+            document.body.classList.toggle('props-open', open);
+            if (scrim) scrim.classList.toggle('hidden', !open);
+        };
+        const btnPropsToggle = document.getElementById('btn-props-toggle');
+        if (btnPropsToggle) {
+            btnPropsToggle.addEventListener('click', () => {
+                setPropsOpen(!document.body.classList.contains('props-open'));
+            });
+        }
+        const btnCloseProps = document.getElementById('btn-close-props');
+        if (btnCloseProps) btnCloseProps.addEventListener('click', () => setPropsOpen(false));
+        if (scrim) scrim.addEventListener('click', () => setPropsOpen(false));
+
         // Batch toggle
         document.getElementById('btn-batch-toggle').addEventListener('click', () => {
             document.getElementById('batch-panel').classList.toggle('hidden');
@@ -406,8 +437,9 @@ Object.assign(PhotoEditor.prototype, {
             input.click();
         });
 
-        // Canvas mouse events
-        this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+        // Canvas pointer events：滑鼠、觸控、觸控筆共用同一組 handler。
+        // 用 mousedown/mousemove 的話，手機上拖曳完全收不到事件。
+        this.canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
 
         // Right click Context Menu for text objects
         this.canvas.addEventListener('contextmenu', (e) => {
@@ -439,12 +471,28 @@ Object.assign(PhotoEditor.prototype, {
             }
         });
 
-        window.addEventListener('mousemove', this.onMouseMove.bind(this));
-        window.addEventListener('mouseup', this.onMouseUp.bind(this));
+        window.addEventListener('pointermove', this.onPointerMove.bind(this), { passive: false });
+        window.addEventListener('pointerup', this.onPointerUp.bind(this));
+        window.addEventListener('pointercancel', this.onPointerUp.bind(this));
+
+        // 手機上瀏覽器的手勢（雙指縮放整頁、下拉刷新）不能吃掉畫布操作
+        this.canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
         // Global Keyboard shortcuts
+        const isTypingTarget = (el) => !!el && (
+            el.isContentEditable ||
+            el.tagName === 'INPUT' ||
+            el.tagName === 'TEXTAREA' ||
+            el.tagName === 'SELECT'
+        );
+
         document.addEventListener('keydown', (e) => {
             if (this.activeTextInput) return;
+            // 使用者正在輸入框打字時，鍵盤是他的，不是快捷鍵的。
+            // 沒有這道閘門，輸入「portrait」會依序觸發 P(畫筆) O(圓形) T(文字)，
+            // 而 Backspace 會刪掉畫布上選取中的文字物件。
+            if (isTypingTarget(e.target) || isTypingTarget(document.activeElement)) return;
 
             // Delete selected text object
             if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedTextObject) {

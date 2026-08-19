@@ -34,6 +34,15 @@ class PhotoEditor {
         this.isDrawing = false;
         this.startX = 0;
         this.startY = 0;
+
+        // Pointer state (mouse / touch / pen 走同一條路)
+        this.activePointers = new Map();
+        this.gesture = null;      // 兩指縮放/平移
+        this.pointerMoved = 0;    // 這次按壓總共移動了多少 px
+        this.coordFreeze = null;  // 這一手勢的座標換算基準，見 tools.js getCanvasCoords
+        this.lastTapObjectId = null;
+        this.lastTapTime = 0;
+
         this.drawingLayer = null; // Temp canvas for current drawing
         this.drawingCtx = null;
         this.modLayer = null;
@@ -87,6 +96,11 @@ class PhotoEditor {
             if (el.hasAttribute('title')) {
                 el.setAttribute('data-tooltip', title);
                 el.removeAttribute('title');
+            }
+            // title 被拿掉之後就沒有可讀名稱了；觸控裝置也沒有 hover tooltip。
+            // 補上 aria-label，讀屏軟體與測試都靠它辨識按鈕。
+            if (title && !el.getAttribute('aria-label') && !(el.innerText || '').trim()) {
+                el.setAttribute('aria-label', title);
             }
 
             el.addEventListener('mouseenter', () => {
@@ -155,10 +169,8 @@ class PhotoEditor {
                 this.historyIndex = -1;
 
                 this.applyAdjustments(); // Will create base working image
-                this.fitToScreen();
-                this.saveState();
 
-                // Show tools
+                // Show tools（先加 class 再 fitToScreen：手機版面會改變畫布可用區域）
                 document.body.classList.add('has-image');
                 this.fitToScreen();
                 this.saveState();
@@ -255,9 +267,15 @@ class PhotoEditor {
     render() {
         if (!this.image) return;
 
+        // 只在尺寸真的變了才動 canvas.width——指定 width 會重新配置整張點陣圖，
+        // 每次 pointermove 都做一次會讓手機上的筆畫嚴重延遲
         const wrapperRect = this.wrapper.getBoundingClientRect();
-        this.canvas.width = wrapperRect.width;
-        this.canvas.height = wrapperRect.height;
+        const w = Math.round(wrapperRect.width);
+        const h = Math.round(wrapperRect.height);
+        if (this.canvas.width !== w || this.canvas.height !== h) {
+            this.canvas.width = w;
+            this.canvas.height = h;
+        }
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -485,6 +503,26 @@ class PhotoEditor {
         }
     }
 
+    /**
+     * 把還沒「合併至畫布」的文字物件畫進指定的 ctx。
+     * 位移量跟 render() / flattenTextObject() 用同一組，確保所見即所得。
+     */
+    drawTextObjectsTo(ctx) {
+        this.textObjects.forEach(obj => {
+            ctx.save();
+            ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+            ctx.fillStyle = obj.color;
+            ctx.textBaseline = 'top';
+            const lineHeight = obj.fontSize * 1.2;
+            const offsetY = obj.fontSize * 0.08 + 1;
+            const offsetX = 1;
+            obj.text.split('\n').forEach((line, index) => {
+                ctx.fillText(line, obj.x + offsetX, obj.y + offsetY + (index * lineHeight));
+            });
+            ctx.restore();
+        });
+    }
+
     exportImage(fileName = 'edited-photo') {
         if (!this.image) return;
 
@@ -504,6 +542,8 @@ class PhotoEditor {
         if (this.activeTool !== 'eraser' && this.drawingLayer && this.drawingLayer.width > 0 && this.drawingLayer.height > 0) {
             ctx.drawImage(this.drawingLayer, 0, 0);
         }
+        // 未合併的文字也要一起輸出，否則使用者打完字直接儲存會無聲丟失
+        this.drawTextObjectsTo(ctx);
 
         tempCanvas.toBlob((blob) => {
             if (!blob) return;

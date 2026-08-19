@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win"
+    "build": "electron-builder --win",
+    "test": "node tests/run.js"
   },
   "build": {
     "appId": "com.easyphotoeditor",

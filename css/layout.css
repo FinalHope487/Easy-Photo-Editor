@@ -143,6 +143,12 @@ canvas {
     max-width: none;
     max-height: none;
     cursor: crosshair;
+    /* 沒有這行，行動瀏覽器會把畫布上的拖曳當成捲動／縮放整頁，
+       pointermove 根本收不到 */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 canvas.hidden {

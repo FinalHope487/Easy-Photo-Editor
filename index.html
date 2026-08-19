@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/utilities.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link
@@ -55,20 +56,31 @@
                 <input type="file" id="file-upload" accept="image/*" multiple class="hidden">
 
                 <button id="btn-batch-toggle" class="icon-btn" title="批量處理清單"><i data-lucide="layers"></i></button>
+
+                <!-- 手機版：開啟影像調整面板。桌機右側欄一直都在，CSS 隱藏這顆。 -->
+                <button id="btn-props-toggle" class="icon-btn mobile-only" title="影像調整與變形"><i
+                        data-lucide="sliders-horizontal"></i></button>
+
                 <div class="divider"></div>
 
-                <select id="export-format" class="ui-select" title="選擇輸出格式">
-                    <option value="image/png">PNG</option>
-                    <option value="image/jpeg">JPEG</option>
-                    <option value="image/webp">WEBP</option>
-                </select>
                 <button id="btn-export" class="primary-btn" title="儲存當前圖片">
-                    <i data-lucide="download"></i> 儲存
+                    <i data-lucide="download"></i> <span class="btn-label">儲存</span>
                 </button>
 
                 <!-- Export Popover -->
                 <div id="export-popover" class="export-popover hidden">
-                    <input type="text" id="export-filename" class="ui-input-text" placeholder="輸入檔案名稱">
+                    <label class="export-field">
+                        <span class="export-field-label">檔案名稱</span>
+                        <input type="text" id="export-filename" class="ui-input-text" placeholder="輸入檔案名稱">
+                    </label>
+                    <label class="export-field">
+                        <span class="export-field-label">格式</span>
+                        <select id="export-format" class="ui-select" title="選擇輸出格式">
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/webp">WEBP</option>
+                        </select>
+                    </label>
                     <button id="btn-confirm-export" class="primary-btn-small">儲存</button>
                 </div>
             </div>
@@ -89,70 +101,72 @@
                     <button class="tool-btn" data-tool="mosaic" title="馬賽克 (M)"><i data-lucide="grid-3x3"></i></button>
                 </div>
 
-                <div class="divider horizontal"></div>
+            </aside>
 
-                <!-- dynamic attributes for current tool -->
-                <div class="tool-attributes" id="attr-panel">
-                    <div id="draw-attrs">
-                        <div class="attr-group" id="text-font-group" style="display: none;">
-                            <label>字型</label>
-                            <select id="text-font" class="ui-select"
-                                style="width: 100%; margin-bottom: 8px; font-size: 0.9rem; padding: 4px;"></select>
-                            <button id="btn-load-fonts" class="secondary-btn hidden"
-                                style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"><i
-                                    data-lucide="sparkles"
-                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
-                                載入本機字型</button>
-                            <button id="btn-flatten-text" class="primary-btn hidden"
-                                style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"
-                                title="將選取的文字合併至畫布"><i data-lucide="layers"
-                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
-                                ⚓ 合併至畫布</button>
-                            <button id="btn-delete-text" class="secondary-btn hidden"
-                                style="width: 100%; font-size: 0.8rem; padding: 4px; border-radius: 4px; color: #ff4d4f; border-color: rgba(255, 77, 79, 0.3);"
-                                title="刪除選取的文字"><i data-lucide="trash-2"
-                                    style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
-                                🗑️ 刪除文字</button>
-                        </div>
-                        <div class="attr-group">
-                            <label>尺寸 <span id="val-size">5px</span></label>
-                            <input type="range" id="tool-size" min="1" max="100" value="5">
-                        </div>
-                        <div class="attr-group" id="color-attr-group">
-                            <label>顏色</label>
-                            <div class="color-picker-wrapper">
-                                <input type="color" id="tool-color" value="#eb4034">
-                            </div>
-                            <div class="color-palette" id="color-palette">
-                                <button class="palette-swatch" style="background-color: #eb4034;"
-                                    data-color="#eb4034"></button>
-                                <button class="palette-swatch" style="background-color: #3b82f6;"
-                                    data-color="#3b82f6"></button>
-                                <button class="palette-swatch" style="background-color: #10b981;"
-                                    data-color="#10b981"></button>
-                                <button class="palette-swatch" style="background-color: #f59e0b;"
-                                    data-color="#f59e0b"></button>
-                                <button class="palette-swatch" style="background-color: #8b5cf6;"
-                                    data-color="#8b5cf6"></button>
-                                <button class="palette-swatch" style="background-color: #ec4899;"
-                                    data-color="#ec4899"></button>
-                                <button class="palette-swatch" style="background-color: #ffffff;"
-                                    data-color="#ffffff"></button>
-                                <button class="palette-swatch" style="background-color: #000000;"
-                                    data-color="#000000"></button>
-                            </div>
-                        </div>
+            <!-- 工具屬性面板。放在 main-content 底下、不放進 tools-sidebar：
+                 手機版的 tools-sidebar 是 position:fixed + backdrop-filter，會成為
+                 fixed 子元素的 containing block，再被它自己的 overflow 切掉 —— 面板會
+                 縮成一條壓在畫布下面的細片，裡面的「確定裁切」按鈕一根手指也碰不到。 -->
+            <div class="tool-attributes" id="attr-panel">
+                <div id="draw-attrs">
+                    <div class="attr-group" id="text-font-group" style="display: none;">
+                        <label>字型</label>
+                        <select id="text-font" class="ui-select"
+                            style="width: 100%; margin-bottom: 8px; font-size: 0.9rem; padding: 4px;"></select>
+                        <button id="btn-load-fonts" class="secondary-btn hidden"
+                            style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"><i
+                                data-lucide="sparkles"
+                                style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                            載入本機字型</button>
+                        <button id="btn-flatten-text" class="primary-btn hidden"
+                            style="width: 100%; margin-bottom: 8px; font-size: 0.8rem; padding: 4px; border-radius: 4px;"
+                            title="將選取的文字合併至畫布"><i data-lucide="layers"
+                                style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                            ⚓ 合併至畫布</button>
+                        <button id="btn-delete-text" class="secondary-btn hidden"
+                            style="width: 100%; font-size: 0.8rem; padding: 4px; border-radius: 4px; color: #ff4d4f; border-color: rgba(255, 77, 79, 0.3);"
+                            title="刪除選取的文字"><i data-lucide="trash-2"
+                                style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
+                            🗑️ 刪除文字</button>
                     </div>
-                    <div id="crop-attrs" class="hidden">
-                        <div class="attr-group">
-                            <label>裁切選取區</label>
-                            <p class="small-text text-muted mb-3 mt-2">縮放與平移圖片至中心方框內，然後按下確定。</p>
-                            <button id="btn-apply-crop" class="primary-btn w-full"><i data-lucide="check"></i>
-                                確定裁切</button>
+                    <div class="attr-group">
+                        <label>尺寸 <span id="val-size">5px</span></label>
+                        <input type="range" id="tool-size" min="1" max="100" value="5">
+                    </div>
+                    <div class="attr-group" id="color-attr-group">
+                        <label>顏色</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="tool-color" value="#eb4034">
+                        </div>
+                        <div class="color-palette" id="color-palette">
+                            <button class="palette-swatch" style="background-color: #eb4034;"
+                                data-color="#eb4034"></button>
+                            <button class="palette-swatch" style="background-color: #3b82f6;"
+                                data-color="#3b82f6"></button>
+                            <button class="palette-swatch" style="background-color: #10b981;"
+                                data-color="#10b981"></button>
+                            <button class="palette-swatch" style="background-color: #f59e0b;"
+                                data-color="#f59e0b"></button>
+                            <button class="palette-swatch" style="background-color: #8b5cf6;"
+                                data-color="#8b5cf6"></button>
+                            <button class="palette-swatch" style="background-color: #ec4899;"
+                                data-color="#ec4899"></button>
+                            <button class="palette-swatch" style="background-color: #ffffff;"
+                                data-color="#ffffff"></button>
+                            <button class="palette-swatch" style="background-color: #000000;"
+                                data-color="#000000"></button>
                         </div>
                     </div>
                 </div>
-            </aside>
+                <div id="crop-attrs" class="hidden">
+                    <div class="attr-group">
+                        <label>裁切選取區</label>
+                        <p class="small-text text-muted mb-3 mt-2">縮放與平移圖片至中心方框內，然後按下確定。</p>
+                        <button id="btn-apply-crop" class="primary-btn w-full"><i data-lucide="check"></i>
+                            確定裁切</button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Canvas Area -->
             <section class="canvas-area" id="canvas-wrapper">
@@ -166,7 +180,12 @@
             </section>
 
             <!-- Right Sidebar: Properties & Adjustments -->
-            <aside class="sidebar properties-sidebar">
+            <aside class="sidebar properties-sidebar" id="properties-sidebar">
+                <div class="sheet-handle mobile-only">
+                    <span class="sheet-grip"></span>
+                    <button id="btn-close-props" class="icon-btn-small" title="關閉影像調整面板"><i
+                            data-lucide="x"></i></button>
+                </div>
                 <div class="panel-section">
                     <h3>影像調整</h3>
                     <div class="adj-group">
@@ -224,7 +243,8 @@
         <div id="batch-panel" class="batch-panel hidden">
             <div class="batch-header">
                 <h4>批量處理清單 (<span id="batch-count">0</span>)</h4>
-                <button id="btn-close-batch" class="icon-btn-small"><i data-lucide="x"></i></button>
+                <button id="btn-close-batch" class="icon-btn-small" title="關閉批量處理清單"><i
+                        data-lucide="x"></i></button>
             </div>
             <div class="batch-list" id="batch-list">
                 <!-- Batch items will be injected here -->
@@ -237,6 +257,9 @@
 
     <!-- Brush Cursor Overlay -->
     <div id="brush-cursor" class="brush-cursor hidden"></div>
+
+    <!-- 手機版 bottom sheet 的背景遮罩 -->
+    <div id="mobile-scrim" class="mobile-scrim hidden"></div>
 
     <!-- Initialize icons -->
     <script>
