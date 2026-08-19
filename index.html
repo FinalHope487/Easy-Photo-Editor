@@ -108,6 +108,12 @@
                  fixed 子元素的 containing block，再被它自己的 overflow 切掉 —— 面板會
                  縮成一條壓在畫布下面的細片，裡面的「確定裁切」按鈕一根手指也碰不到。 -->
             <div class="tool-attributes" id="attr-panel">
+                <!-- 手機用：面板浮在畫布上，收起來才碰得到被它蓋住的那塊圖 -->
+                <button type="button" id="btn-attr-collapse" class="attr-collapse mobile-only"
+                    aria-expanded="true" aria-controls="attr-panel">
+                    <span id="attr-summary">工具設定</span>
+                    <i data-lucide="chevron-down"></i>
+                </button>
                 <div id="draw-attrs">
                     <div class="attr-group" id="text-font-group" style="display: none;">
                         <label>字型</label>
