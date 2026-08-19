@@ -15,19 +15,19 @@
 
 <!-- 格式：- [標記] 說明（可附上下文/來源 session） -->
 
-- `[next]` **文字工具的預設字級是 5px**（`js/core.js` 的 `this.toolSize = 5` 同時當筆刷粗細
-  與字級用）。在 400×300 的圖上打出來的字只有 13×6 px，手機上等於看不見。
-  筆刷 5px 是合理的，字級不是——兩者共用一個值才是問題。
-  （來源：2026-08-19 查文字方塊拖不動時量到 `fontSize=5`、`w=13.3 h=6.0`）
+**本輪清空。** 原本的四項全部處理完：兩項 `[next]` 已實作並有測試守著，
+兩項 `[later]` 依〈工作模式〉「高風險項：不做，而不是停下來問」備好但不執行，
+等你批准，見 `QUESTIONS.md`〈待你執行／待你批准的動作〉。
 
-- `[next]` **手機版工具屬性面板的高度上限是取捨過的 32vh**。再高會壓住畫布中心點，
-  使用者選完工具就點不到圖的中段；再矮則文字工具的字型／字級／顏色要捲兩屏。
-  真正的解法是把面板改成分頁或可收合，不是繼續調 vh。
-
-- `[later]` 跨瀏覽器（WebKit / iOS Safari）驗證層。需要新增 devDependency ＝高風險，
-  見 `QUESTIONS.md`〈待你執行／待你批准的動作〉。
-
-- `[later]` GitHub Pages 線上版的部署後驗證。
+- ~~`[next]` 文字工具的預設字級是 5px~~ → 已修。字級與筆刷粗細分家，
+  預設 = 圖高/12（commit `1cd8936`）
+- ~~`[next]` 手機版面板高度上限是取捨過的 32vh~~ → 已加收合列。
+  32vh 保留：面板展開時仍不可蓋住畫布中心，有測試釘著（commit `e6a5afe`）
+- ~~`[later]` 跨瀏覽器（WebKit / iOS Safari）驗證層~~ → 已備好
+  `tests/webkit/run.js` + `npm run test:webkit`。未安裝 playwright，
+  `npm test` 以 ○ skip 顯示原因（commit `fa32458`）
+- ~~`[later]` GitHub Pages 線上版的部署後驗證~~ → 已備好並實跑
+  `npm run test:pages`，目前 1 passed / 7 failed ＝線上版還沒有這些修正
 
 ---
 
@@ -64,6 +64,26 @@
   視窗縮放都會在下筆途中觸發，同一筆的前後半段落在不同位置。
   反悔成本：`js/tools.js` 的 `freezeCoords` 一個函式 + 三處呼叫。
 
+- **(2026-08-19) 字級與筆刷粗細分成兩個值，預設字級照圖片高度推算。**
+  依據：兩者原本共用 `toolSize`，預設 5px 對筆刷合理、對字級是「打了看不見」。
+  固定預設值（例如一律 32px）在 4000px 的圖上一樣看不見，所以取比例：圖高/12，
+  夾在 12~400。同一個滑桿在文字工具下代表字級、上限跟著圖高走。
+  反悔成本：`js/core.js` 兩個小函式 + `js/ui.js` 的 `syncSizeSlider`，
+  已存在的文字物件不受影響（`fontSize` 本來就存在物件裡）。
+
+- **(2026-08-19) 手機屬性面板用「收合列」，不用分頁或可拖曳 sheet。**
+  依據：屬性項目數量隨工具變動（裁切只有一顆按鈕、文字有四組），
+  分頁在只有一組時是多餘的框；可拖曳 sheet 要跟畫布本身的拖曳搶手勢。
+  收合列是三者中唯一不新增手勢的。換工具自動展開——剛選完工具多半就是要調參數。
+  反悔成本：`index.html` 一個 button、`css/mobile.css` 一段、`js/ui.js` 兩個小函式。
+
+- **(2026-08-19) 高風險的兩層驗證「備好但不接上」。**
+  依據：CLAUDE.md〈工作模式〉「高風險項：不做，而不是停下來問」。
+  WebKit 那層需要新增 devDependency，寫好 runner 但不安裝，
+  用 skip-with-reason 讓「這一層沒有覆蓋」以 ○ 的形式出現在 `npm test`，
+  不會安靜消失、也不會把總數弄紅。
+  反悔成本：刪 `tests/webkit/`、`tests/cases/crossbrowser.js` 與兩行 script。
+
 - **(2026-08-19) `#attr-panel` 從 `tools-sidebar` 搬到 `main-content` 底下。**
   依據：手機版 `tools-sidebar` 是 `position:fixed` + `backdrop-filter`，
   會成為 fixed 子元素的 containing block 並用自己的 `overflow` 把面板切掉。
@@ -93,3 +113,19 @@
   2. 一條「偶爾紅」的測試（橡皮擦擦不乾淨）跟一條「總是紅」的測試可以是同一個
      根因。橡皮擦那條的多出來的墨跡，就是下筆途中 resize 被扯出來的那條斜線。
      先別急著把偶發的那條標成 flaky。
+
+- **2026-08-19 · 清空 ROADMAP 待辦：字級分家、面板收合、兩層驗證備好**
+  改動檔案：`js/core.js`、`js/ui.js`、`js/tools.js`、`index.html`、`css/mobile.css`、
+  `tests/`、`package.json`。commit `1cd8936`、`e6a5afe`、`fa32458`。
+  **測試數（實跑）**：`npm test` → **78 passed, 0 failed, 1 skipped（共 79）**。
+  那 1 條 skip 是 WebKit 層，原因印在輸出裡（未安裝 playwright）。
+  `npm run test:pages` → **1 passed, 7 failed**：線上版還沒有這些修正，預期中的紅。
+  **教訓（不在別處）**：
+  1. 等非同步事件不要比對「呼叫當下的長度」。`waitForDownload` 這樣寫，
+     在下載比呼叫更快完成時會變成等第二個永遠不會來的下載——症狀是
+     檔案明明已經落地，測試卻說「沒有檔案落地」。要用佇列取件。
+  2. 部署後驗證的標記字串必須是**這一輪才出現**的。第一版拿 `id="attr-panel"`
+     與 `z-index: 20` 當標記，兩者在修正前的版本也存在，於是給出假的綠。
+  3. 用 `git checkout <檔>` 還原「為了驗紅而改壞的地方」，會連同**同一個檔案裡
+     還沒 commit 的新工作**一起丟掉。改壞要用能精準還原的方式（改回那一行），
+     或先 commit 再改壞。
