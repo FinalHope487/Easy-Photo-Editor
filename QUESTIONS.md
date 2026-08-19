@@ -52,10 +52,11 @@ mobile viewport 的修法（改測試環境 vs 放寬斷言）／測試視窗如
 
 <!-- - [ ] <動作>｜為什麼｜已備好的東西（路徑）｜不做的後果 -->
 
-- [ ] **設 git remote 之後 push 並開 PR**｜本輪工作已 commit 在功能分支
-  `fix/mobile-ui-and-ui-layer-tests`，但這個 repo 目前是 detached HEAD 起家，
-  我不會替你 push｜已備好：commit `fd59820` 起的本地分支，`main` 未被動過｜
-  不做的後果：修正只存在本機
+- [ ] **審 PR #4 並決定要不要合進 `main`**｜
+  https://github.com/FinalHope487/Easy-Photo-Editor/pull/4 ｜
+  分支 `fix/mobile-ui-and-ui-layer-tests` 已 push，`main` 未被動過｜
+  已備好：PR 說明列了五個症狀對應的根因與檔案，測試 71 綠｜
+  不做的後果：手機版的修正不會出現在 GitHub Pages 的線上版
 
 - [ ] **是否要加 Playwright / WebdriverIO** 做跨瀏覽器驗證｜
   現行測試只跑 Electron 內建的 Chromium，**驗不到 iOS Safari 的真實行為**——
