@@ -88,11 +88,25 @@ async function main() {
         })()`);
         check(`${deviceName}：底部工具列在可視範圍內`, bottomOk, '工具列被推到畫面外');
 
+        // 收合前先記下面板中心，收合後那個位置要變成畫布——只問 class 有沒有加上去
+        // 是問不出東西的，CSS 沒生效時 class 照樣在。
+        await page.tap('.tool-btn[data-tool="text"]');
+        await page.waitForTimeout(400);
+        const probe = await page.evaluate(`(() => {
+            const r = document.querySelector('.tool-attributes').getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        })()`);
+        const whoAt = `(() => { const el = document.elementFromPoint(${probe.x}, ${probe.y});
+            return el ? (el.id || el.className || el.tagName) : '(null)'; })()`;
+        const coveredBefore = await page.evaluate(whoAt);
+        check(`${deviceName}：展開的面板確實蓋著畫布（前置條件）`,
+            coveredBefore !== 'editor-canvas', `那個位置本來就是 ${coveredBefore}`);
+
         await page.tap('#btn-attr-collapse');
-        await page.waitForTimeout(450);
-        const collapsed = await page.evaluate(
-            `document.body.classList.contains('attrs-collapsed')`);
-        check(`${deviceName}：屬性面板收得起來`, collapsed, '按了收合列沒有反應');
+        await page.waitForTimeout(500);
+        const coveredAfter = await page.evaluate(whoAt);
+        check(`${deviceName}：收合之後那塊畫布碰得到`,
+            coveredAfter === 'editor-canvas', `收合後那個位置是 ${coveredAfter}`);
 
         await context.close();
     }

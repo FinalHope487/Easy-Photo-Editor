@@ -10,83 +10,13 @@
 
 ## 待拍板
 
-以下五題**全部已經照推薦的做法出貨了**，測試都綠。列在這裡是因為每一題都寫得出
-一個像樣的選項 B，你可能想選那個。每題都附回退成本。
+**本輪無待決問題。** 上一批五題你已經全部回答（維持推薦 + 批准安裝 playwright），
+決策與反悔成本已搬進 `ROADMAP.md`〈已拍板的決策〉，不再重問。
 
-### Q1 · 匯出要不要把未合併的文字物件畫進去（中風險：輸出位元組會變）
-
-**現況原本是 bug**：`exportImage()` 只畫 `image` + `modLayer` + `drawingLayer`，
-沒畫 `textObjects`。使用者打完字直接按儲存，文字無聲消失。
-
-| 問 | 答 | 分級 |
-|---|---|---|
-| 既有存檔還讀不讀得起來 | 讀得起來（仍是 PNG/JPEG/WEBP，沒動格式） | 過關 |
-| 既有進入點寫出來的位元組變了嗎 | **變了**——只在「畫面上有未合併文字」時 | **中風險** |
-
-- **A（已出貨，推薦）**：匯出含文字 → 所見即所得
-- **B**：維持舊行為，使用者必須先按「合併至畫布」 → 少一次隱含轉換，但打了字直接存會丟失
-
-**回退成本**：低。移除 `js/core.js` 的 `drawTextObjectsTo()` 呼叫共 2 處。
-匯出是產生新檔、不覆寫，沒有既有資料受影響。
-
----
-
-### Q2 · 預設字級要用「跟著圖片大小」還是「固定值」
-
-原本字級與筆刷粗細共用一個值，預設 5px——在 400×300 的圖上打出來只有 13×6 px。
-
-- **A（已出貨，推薦）**：預設 = 圖高 / 12，夾在 12~400 之間 →
-  400×300 的圖給 25px、2000×1500 的圖給 125px，兩邊都看得見
-- **B**：固定預設（例如 32px）→ 行為好預測，但在 4000px 的照片上一樣看不見
-- **C**：使用者調過之後就記住那個數字，跨圖片沿用 → 目前**已經是**這樣
-  （`textSize` 一旦被設定就不再自動推算）。要不要在「載入新圖片」時重設回自動，
-  是這題的子問題。我選了不重設：你手動指定過的東西不該被系統偷偷改掉
-
-**回退成本**：低。`js/core.js` 的 `defaultTextSize()` 改一行。
-已存在的文字物件不受影響（`fontSize` 存在物件自己身上）。
-
----
-
-### Q3 · 手機屬性面板的互動模型
-
-面板浮在畫布上，高度再怎麼調都會蓋住一塊圖。
-
-- **A（已出貨，推薦）**：44px 的收合列，點一下收起／展開，收合列顯示「筆刷 24px」→
-  不新增任何手勢，項目數量隨工具變動時也不會出現空框
-- **B**：分頁（尺寸／顏色／字型）→ 高度固定較矮，但裁切工具只有一顆按鈕時，
-  分頁列變成純粹的裝飾
-- **C**：可拖曳的 bottom sheet，兩段吸附 → 最像原生 app，但要跟畫布本身的拖曳搶手勢，
-  而畫布的拖曳就是這輪剛修好的東西
-
-**回退成本**：低。`index.html` 一個 button、`css/mobile.css` 一段、`js/ui.js` 兩個小函式。
-
----
-
-### Q4 · 換工具時要不要強制展開面板
-
-- **A（已出貨，推薦）**：一律展開 → 剛選完工具多半就是要調它的參數
-- **B**：記住使用者上次的收合狀態 → 少一次動作，但使用者會遇到「選了筆刷卻沒看到
-  粗細滑桿」，容易以為壞了
-
-**回退成本**：`js/ui.js` 的 `updateToolUI` 開頭三行。
-
----
-
-### Q5 · `assets/`、`references/`、`claude-decisions.json` 要不要納入 git
-
-我把它們 commit 了（`ac63923`）。
-
-- **A（已出貨）**：納管 → 換機器／換 session 時規則模板跟著走
-- **B**：不納管，加進 `.gitignore` → repo 只留 app 本身
-
-**回退成本**：`git rm --cached -r assets references claude-decisions.json` 加一行 ignore。
-
----
-
-**本輪已檢查、自行定案不另外開題的軸**：預設字級的夾擠上下限（12/400）、
-滑桿在文字工具下的上限公式（圖高/2）、收合列上要顯示什麼（工具名＋尺寸）、
-WebKit 那層要涵蓋哪些斷言（只涵蓋 playwright 對 WebKit 真的做得到的：
-版面／堆疊／命中測試／單點觸控）。理由與反悔成本在 `ROADMAP.md`〈已拍板的決策〉。
+已檢查、判定不需要開題的軸：預設字級的夾擠上下限（12/400）、滑桿在文字工具下的
+上限公式（圖高/2）、收合列上顯示什麼（工具名＋尺寸）、WebKit 那層要涵蓋哪些斷言
+（只涵蓋 playwright 對 WebKit 真的做得到的：版面／堆疊／命中測試／單點觸控）、
+WebKit 怎麼接進 `npm test`（子行程 vs 另一個指令）。
 
 ---
 
@@ -97,28 +27,29 @@ WebKit 那層要涵蓋哪些斷言（只涵蓋 playwright 對 WebKit 真的做�
 - [ ] **審 PR #4 並合進 `main`**｜
   https://github.com/FinalHope487/Easy-Photo-Editor/pull/4 ｜
   手機／平板碰不到的操作那一批修正｜`main` 未被動過｜
-  不做的後果：線上版仍然是手機不可用的狀態（`npm run test:pages` 現在 7 條紅就是這個）
+  不做的後果：線上版仍是手機不可用的狀態
 
-- [ ] **審這一輪的 PR（stacked 在 #4 上）**｜字級分家、面板收合、兩層驗證備好｜
-  base 是 `fix/mobile-ui-and-ui-layer-tests` 而不是 `main`，因為 #4 還沒合；
-  #4 合了之後這個 PR 的 base 會自動變成 `main`｜
+- [ ] **審 PR #5**（stacked 在 #4 上）｜
+  https://github.com/FinalHope487/Easy-Photo-Editor/pull/5 ｜
+  字級分家、面板收合、WebKit 與部署後兩層驗證｜
+  base 是 `fix/mobile-ui-and-ui-layer-tests`；#4 合了之後會自動變成 `main`｜
   不做的後果：這輪的修正卡在分支上
-
-- [ ] **批准安裝 playwright 做 WebKit 驗證**（高風險：新增相依套件）｜
-  現行測試只有 Chromium，**驗不到 iOS Safari**——而這輪修掉的三個 bug 都是
-  CSS 堆疊／裁切問題（`backdrop-filter` 造成 containing block、定位元素的 DOM 順序），
-  正是 WebKit 與 Chromium 最容易分家的地方｜
-  已備好：`tests/webkit/run.js` + `npm run test:webkit`，沒安裝時 `npm test`
-  以 ○ skip 顯示原因，不會安靜消失｜
-  指令：`npm i -D playwright && npx playwright install webkit`｜
-  不做的後果：Safari 專屬問題只能靠規格推論，沒有實跑證據。
-  **已知限制先講**：playwright 對 WebKit 沒有多段觸控拖曳的真輸入 API，
-  裝了也只驗得到版面／堆疊／命中測試／單點觸控，畫筆拖曳仍只有 Chromium 那層
 
 - [ ] **合併之後跑 `npm run test:pages`**｜確認線上版真的拿到修正
   （GitHub Pages 有建置延遲，合併當下不會馬上變）｜
-  已備好：`tests/pages-smoke.js`，唯讀 GET，7 個標記逐項比對｜
+  已備好：`tests/pages-smoke.js`，唯讀 GET，7 個標記逐項比對，
+  現在是 1 passed / 7 failed｜
   不做的後果：只知道本機綠，不知道使用者實際打開的那份是什麼
+
+- [ ] **要不要處理 `npm audit` 的 18 個漏洞**（17 high、1 critical）｜
+  **不是這輪帶進來的**——逐項看過，全部來自既有的 `electron` /
+  `electron-builder` 依賴樹（`tar` 的 path traversal 是那個 critical），
+  playwright 不在名單上｜
+  升級 `electron` / `electron-builder` 屬「新增或移除相依套件」＝高風險，
+  而且 Electron 大版本升級可能動到 `tests/main.js` 依賴的 CDP 行為，
+  我不會自己動｜
+  不做的後果：這些是建置與桌面殼的相依，不會出現在 GitHub Pages 的線上版；
+  但 `npm i` 的人會一直看到警告
 
 ---
 
@@ -126,4 +57,4 @@ WebKit 那層要涵蓋哪些斷言（只涵蓋 playwright 對 WebKit 真的做�
 
 <!-- - <症狀>｜試過什麼｜每次的錯誤｜我認為根因在哪 -->
 
-（無。`npm test` 78 passed / 0 failed / 1 skipped。）
+（無。`npm test` 79 passed / 0 failed / 0 skipped。）

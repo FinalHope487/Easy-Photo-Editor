@@ -23,9 +23,9 @@
   預設 = 圖高/12（commit `1cd8936`）
 - ~~`[next]` 手機版面板高度上限是取捨過的 32vh~~ → 已加收合列。
   32vh 保留：面板展開時仍不可蓋住畫布中心，有測試釘著（commit `e6a5afe`）
-- ~~`[later]` 跨瀏覽器（WebKit / iOS Safari）驗證層~~ → 已備好
-  `tests/webkit/run.js` + `npm run test:webkit`。未安裝 playwright，
-  `npm test` 以 ○ skip 顯示原因（commit `fa32458`）
+- ~~`[later]` 跨瀏覽器（WebKit / iOS Safari）驗證層~~ → **你已批准安裝 playwright**，
+  現在是 `npm test` 裡的一條真測試（子行程跑 `tests/webkit/run.js`，
+  iPhone 13 + iPad 共 12 條斷言）。單獨跑：`npm run test:webkit`
 - ~~`[later]` GitHub Pages 線上版的部署後驗證~~ → 已備好並實跑
   `npm run test:pages`，目前 1 passed / 7 failed ＝線上版還沒有這些修正
 
@@ -77,6 +77,16 @@
   收合列是三者中唯一不新增手勢的。換工具自動展開——剛選完工具多半就是要調參數。
   反悔成本：`index.html` 一個 button、`css/mobile.css` 一段、`js/ui.js` 兩個小函式。
 
+- **(2026-08-19・你批准) 安裝 playwright，WebKit 那層接進 `npm test`。**
+  你在本輪回答「批准安裝」。已跑 `npm i -D playwright` +
+  `npx playwright install webkit`，並把 `tests/cases/crossbrowser.js` 從
+  skip 佔位改成用子行程跑 `tests/webkit/run.js`（用 `process.execPath` +
+  `ELECTRON_RUN_AS_NODE=1`，不依賴系統 PATH 上的 node）。
+  WebKit 12 條斷言，整包約 7 秒，併入 `npm test` 的紅綠。
+  **`npm audit` 的 18 個漏洞不是 playwright 帶進來的**——逐項看過，
+  全部來自既有的 `electron` / `electron-builder` 依賴樹，playwright 不在名單上。
+  反悔成本：`npm rm -D playwright` + 把 `crossbrowser.js` 改回 skip 佔位。
+
 - **(2026-08-19) 高風險的兩層驗證「備好但不接上」。**
   依據：CLAUDE.md〈工作模式〉「高風險項：不做，而不是停下來問」。
   WebKit 那層需要新增 devDependency，寫好 runner 但不安裝，
@@ -117,8 +127,9 @@
 - **2026-08-19 · 清空 ROADMAP 待辦：字級分家、面板收合、兩層驗證備好**
   改動檔案：`js/core.js`、`js/ui.js`、`js/tools.js`、`index.html`、`css/mobile.css`、
   `tests/`、`package.json`。commit `1cd8936`、`e6a5afe`、`fa32458`。
-  **測試數（實跑）**：`npm test` → **78 passed, 0 failed, 1 skipped（共 79）**。
-  那 1 條 skip 是 WebKit 層，原因印在輸出裡（未安裝 playwright）。
+  **測試數（實跑）**：`npm test` → **79 passed, 0 failed, 0 skipped（共 79）**，
+  含 WebKit 那條（子行程 12 條斷言，約 7 秒）。
+  `npm run test:webkit` → **12 passed, 0 failed**（iPhone 13 + iPad gen 7）。
   `npm run test:pages` → **1 passed, 7 failed**：線上版還沒有這些修正，預期中的紅。
   **教訓（不在別處）**：
   1. 等非同步事件不要比對「呼叫當下的長度」。`waitForDownload` 這樣寫，
@@ -129,3 +140,6 @@
   3. 用 `git checkout <檔>` 還原「為了驗紅而改壞的地方」，會連同**同一個檔案裡
      還沒 commit 的新工作**一起丟掉。改壞要用能精準還原的方式（改回那一行），
      或先 commit 再改壞。
+  4. 新增一層驗證之後，第一件事是**證明它會紅**。WebKit 那層第一版的收合斷言
+     只問 `body` 有沒有那個 class——CSS 整段拿掉它照樣綠。改成問
+     `elementFromPoint`，再把 CSS 改壞一次，兩台裝置都紅了才算數。
