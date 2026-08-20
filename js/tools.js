@@ -1,10 +1,150 @@
 Object.assign(PhotoEditor.prototype, {
     getCanvasCoords(e) {
-        const rect = this.canvas.getBoundingClientRect();
+        // 手勢進行中一律用「下筆當下」的換算基準。中途的 resize（手機網址列收合、
+        // 轉向、視窗拉大）會走 fitToScreen 改掉 panX/panY/scale，換算基準若跟著變，
+        // 同一筆的前後半段會落在不同位置，畫面上就是一條橫跨整張圖的斜線。
+        const f = this.coordFreeze;
+        const rect = f || this.canvas.getBoundingClientRect();
+        const panX = f ? f.panX : this.panX;
+        const panY = f ? f.panY : this.panY;
+        const scale = f ? f.scale : this.scale;
         return {
-            x: (e.clientX - rect.left - this.panX) / this.scale,
-            y: (e.clientY - rect.top - this.panY) / this.scale
+            x: (e.clientX - rect.left - panX) / scale,
+            y: (e.clientY - rect.top - panY) / scale
         };
+    },
+
+    /** 記下這一手勢要用的換算基準。單指按下時呼叫，抬起時清掉。 */
+    freezeCoords() {
+        const rect = this.canvas.getBoundingClientRect();
+        this.coordFreeze = {
+            left: rect.left, top: rect.top,
+            panX: this.panX, panY: this.panY, scale: this.scale,
+        };
+    },
+
+    /** 觸控時把命中範圍放大：手指沒有 1px 的精準度。 */
+    hitSlop(e) {
+        return e && e.pointerType && e.pointerType !== 'mouse' ? 14 : 4;
+    },
+
+    // --- Pointer 進入點：滑鼠 / 觸控 / 觸控筆共用同一條路 ---
+
+    onPointerDown(e) {
+        if (!this.image) return;
+        if (e.pointerType === 'mouse' && e.button > 2) return;
+
+        this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        // 第二根手指落下 → 進入雙指縮放/平移，並取消單指已經起頭的動作
+        if (this.activePointers.size === 2) {
+            this.beginGesture();
+            return;
+        }
+        if (this.activePointers.size > 2) return;
+
+        e.preventDefault();
+        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* 不支援就算了 */ }
+
+        this.pointerMoved = 0;
+        this.lastPointerX = e.clientX;
+        this.lastPointerY = e.clientY;
+        this.freezeCoords();
+
+        this.onMouseDown(e);
+    },
+
+    onPointerMove(e) {
+        if (this.activePointers.has(e.pointerId)) {
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        }
+
+        if (this.gesture && this.activePointers.size >= 2) {
+            this.updateGesture();
+            return;
+        }
+        if (this.activePointers.size > 1) return;
+
+        if (this.activePointers.has(e.pointerId)) {
+            this.pointerMoved += Math.hypot(e.clientX - this.lastPointerX, e.clientY - this.lastPointerY);
+            this.lastPointerX = e.clientX;
+            this.lastPointerY = e.clientY;
+        }
+
+        this.onMouseMove(e);
+    },
+
+    onPointerUp(e) {
+        const wasTracked = this.activePointers.delete(e.pointerId);
+        try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) { /* 已釋放 */ }
+
+        if (this.gesture) {
+            if (this.activePointers.size < 2) this.gesture = null;
+            return;
+        }
+        if (!wasTracked && this.activePointers.size > 0) return;
+
+        // 幾乎沒移動 → 算一次「點擊」，供雙擊偵測用（拖曳不算）
+        if (this.pointerMoved < 6 && this.pressedTextObject) {
+            this.lastTapObjectId = this.pressedTextObject.id;
+            this.lastTapTime = Date.now();
+        } else {
+            this.lastTapObjectId = null;
+        }
+        this.pressedTextObject = null;
+
+        this.onMouseUp(e);
+        this.coordFreeze = null;
+    },
+
+    beginGesture() {
+        // 雙指接手：縮放本來就要改 scale，換算基準不能再凍住
+        this.coordFreeze = null;
+        // 取消單指已經開始的繪製／平移／拖曳，避免雙指時留下雜線
+        if (this.isDrawing) {
+            this.isDrawing = false;
+            this.drawingCtx.clearRect(0, 0, this.drawingLayer.width, this.drawingLayer.height);
+        }
+        this.isPanning = false;
+        this.draggingTextObject = null;
+        this.resizingTextObject = null;
+        this.isDraggingCrop = null;
+        this.pressedTextObject = null;
+
+        const [a, b] = [...this.activePointers.values()];
+        const rect = this.canvas.getBoundingClientRect();
+        this.gesture = {
+            startDist: Math.hypot(b.x - a.x, b.y - a.y),
+            startScale: this.scale,
+            startPan: { x: this.panX, y: this.panY },
+            startMid: { x: (a.x + b.x) / 2 - rect.left, y: (a.y + b.y) / 2 - rect.top },
+        };
+        this.render();
+    },
+
+    updateGesture() {
+        const g = this.gesture;
+        if (!g || g.startDist < 1) return;
+
+        const [a, b] = [...this.activePointers.values()];
+        const rect = this.canvas.getBoundingClientRect();
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const mid = { x: (a.x + b.x) / 2 - rect.left, y: (a.y + b.y) / 2 - rect.top };
+
+        let scale = g.startScale * (dist / g.startDist);
+        scale = Math.max(0.1, Math.min(5, scale));
+
+        // 以手勢起始中點在圖上的位置當錨點，縮放時該點不跑掉
+        const anchorX = (g.startMid.x - g.startPan.x) / g.startScale;
+        const anchorY = (g.startMid.y - g.startPan.y) / g.startScale;
+
+        this.scale = scale;
+        this.panX = mid.x - anchorX * scale;
+        this.panY = mid.y - anchorY * scale;
+
+        this.updateZoomLabel();
+        this.render();
+        if (this.activeTool === 'crop') this.scheduleCropSettle();
     },
 
     onMouseDown(e) {
@@ -16,6 +156,7 @@ Object.assign(PhotoEditor.prototype, {
         }
 
         const clickCoords = this.getCanvasCoords(e);
+        const slop = this.hitSlop(e);
 
         // 1. Global Hit Detection for Text Objects (works in any tool)
         let clickedObject = null;
@@ -24,7 +165,10 @@ Object.assign(PhotoEditor.prototype, {
         // Check selected object's handles first
         if (this.selectedTextObject && !this.selectedTextObject.isEditing) {
             const obj = this.selectedTextObject;
-            const hw = 4 / this.scale; // Handle hit radius
+            // 命中半徑不能大到把方塊本身吃掉。手指的 slop 是 14px，小字級的方塊只有
+            // 十幾 px 寬，兩個角落的命中區會在中間相接 → 每次碰都變成縮放，永遠拖不動。
+            // 角落最多只吃短邊的 1/3，剩下的中段一定是「移動」。
+            const hw = Math.min(slop / this.scale, Math.min(obj.width, obj.height) / 3);
             const padding = 4 / this.scale;
 
             // Top-left handle
@@ -43,10 +187,11 @@ Object.assign(PhotoEditor.prototype, {
 
         // Check objects body if no handle clicked
         if (!clickedHandle) {
+            const m = slop / this.scale; // 觸控時放寬命中範圍
             for (let i = this.textObjects.length - 1; i >= 0; i--) {
                 const obj = this.textObjects[i];
-                if (clickCoords.x >= obj.x && clickCoords.x <= obj.x + obj.width &&
-                    clickCoords.y >= obj.y && clickCoords.y <= obj.y + obj.height) {
+                if (clickCoords.x >= obj.x - m && clickCoords.x <= obj.x + obj.width + m &&
+                    clickCoords.y >= obj.y - m && clickCoords.y <= obj.y + obj.height + m) {
                     clickedObject = obj;
                     break;
                 }
@@ -64,14 +209,20 @@ Object.assign(PhotoEditor.prototype, {
                 this.originalFontSize = clickedObject.fontSize;
                 this.originalObjectY = clickedObject.y;
             } else {
-                // Start Moving or Editing
-                if (this.selectedTextObject === clickedObject && !this.draggingTextObject) {
-                    // Single click on already selected object -> Edit
+                // 雙擊（雙點）才進入編輯。單次按壓一律是「選取 + 準備移動」，
+                // 否則已選取的文字方塊會拖不動——按下去就直接跳進編輯框了。
+                const isDoubleTap = this.lastTapObjectId === clickedObject.id &&
+                    Date.now() - this.lastTapTime < 500;
+                if (isDoubleTap) {
+                    this.lastTapObjectId = null;
+                    this.selectedTextObject = clickedObject;
                     clickedObject.isEditing = true;
                     this._spawnTextEditor(e.clientX, e.clientY, clickedObject);
                     this.render();
                     return;
                 }
+
+                this.pressedTextObject = clickedObject;
 
                 // Select and prepare to move
                 this.selectedTextObject = clickedObject;
@@ -113,9 +264,11 @@ Object.assign(PhotoEditor.prototype, {
         if (this.activeTool === 'crop') {
             if (this.cropBox) {
                 const { x: cx, y: cy, width: cw, height: ch } = this.cropBox;
-                const hit = 12; // Handle hit zone
-                const ex = e.offsetX;
-                const ey = e.offsetY;
+                // 手指要更大的把手；且不能用 e.offsetX——TouchEvent 沒有這個屬性
+                const hit = slop * 2.5;
+                const canvasRect = this.canvas.getBoundingClientRect();
+                const ex = e.clientX - canvasRect.left;
+                const ey = e.clientY - canvasRect.top;
 
                 let handle = null;
                 if (Math.abs(ex - cx) < hit && Math.abs(ey - cy) < hit) handle = 'tl';
@@ -368,21 +521,32 @@ Object.assign(PhotoEditor.prototype, {
         newImg.src = tempCanvas.toDataURL('image/png');
     },
 
+    /** 取樣用的離屏圖：整張圖只複製一次，不要每個 pointermove 都重畫一遍。 */
+    getSampleCanvas() {
+        if (!this._sampleCanvas || this._sampleSource !== this.image ||
+            this._sampleCanvas.width !== this.image.width ||
+            this._sampleCanvas.height !== this.image.height) {
+            this._sampleCanvas = document.createElement('canvas');
+            this._sampleCanvas.width = this.image.width;
+            this._sampleCanvas.height = this.image.height;
+            this._sampleCtx = this._sampleCanvas.getContext('2d', { willReadFrequently: true });
+            this._sampleCtx.drawImage(this.image, 0, 0);
+            this._sampleSource = this.image;
+        }
+        return this._sampleCtx;
+    },
+
     applyMosaicBrush(x, y) {
         const size = this.toolSize; // Mosaic brush size (matches pen)
         if (x < 0 || y < 0 || x > this.image.width || y > this.image.height) return;
 
-        // Get pixel data from actual image
-        const offscreen = document.createElement('canvas');
-        offscreen.width = this.image.width;
-        offscreen.height = this.image.height;
-        const oCtx = offscreen.getContext('2d');
-        oCtx.drawImage(this.image, 0, 0);
+        const oCtx = this.getSampleCanvas();
 
         const startX = Math.max(0, x - size / 2);
         const startY = Math.max(0, y - size / 2);
         const mw = Math.min(size, this.image.width - startX);
         const mh = Math.min(size, this.image.height - startY);
+        if (mw < 1 || mh < 1) return;
 
         const imgData = oCtx.getImageData(startX, startY, mw, mh);
         const data = imgData.data;

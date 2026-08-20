@@ -25,3 +25,6 @@ Photo\ Editor\ Pro-win32-x64/
 *.njsproj
 *.sln
 *.sw?
+
+# 測試產出
+tests/.results.json
