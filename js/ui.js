@@ -1,5 +1,50 @@
 Object.assign(PhotoEditor.prototype, {
+    /** 收合列上要看得出現在調的是什麼，不然收起來就等於忘了設定值。 */
+    updateAttrSummary() {
+        const el = document.getElementById('attr-summary');
+        if (!el) return;
+        const names = {
+            pen: '筆刷', eraser: '橡皮擦', text: '文字', mosaic: '馬賽克',
+            rect: '矩形', 'rect-fill': '實心矩形',
+            circle: '圓形', 'circle-fill': '實心圓形', crop: '裁切',
+        };
+        const name = names[this.activeTool] || '工具設定';
+        if (this.activeTool === 'crop') { el.innerText = name; return; }
+        const size = this.activeTool === 'text' ? this.currentTextSize() : this.toolSize;
+        el.innerText = `${name} ${Math.round(size)}px`;
+    },
+
+    /** 換工具就把面板攤開：剛選完工具多半就是要調它的參數。 */
+    expandAttrs() {
+        document.body.classList.remove('attrs-collapsed');
+        const btn = document.getElementById('btn-attr-collapse');
+        if (btn) {
+            btn.setAttribute('aria-expanded', 'true');
+            btn.setAttribute('aria-label', '收合工具設定');
+        }
+    },
+
+    /** 同一個滑桿在文字工具下代表字級、其餘工具下代表筆刷粗細，範圍也不同。 */
+    syncSizeSlider() {
+        const slider = document.getElementById('tool-size');
+        const label = document.getElementById('val-size');
+        if (!slider) return;
+        const isText = this.activeTool === 'text';
+        const value = isText ? this.currentTextSize() : this.toolSize;
+        slider.min = isText ? 8 : 1;
+        // 大圖需要大字級：上限跟著圖片高度走，否則 100px 的字在 4000px 的圖上還是小
+        slider.max = isText && this.image
+            ? Math.max(100, Math.round(this.image.height / 2)) : 100;
+        slider.value = value;
+        if (label) label.innerText = `${Math.round(value)}px`;
+        this.updateAttrSummary();
+    },
+
     updateToolUI() {
+        if (this._attrsToolShown !== this.activeTool) {
+            this._attrsToolShown = this.activeTool;
+            this.expandAttrs();
+        }
         const attrPanel = document.getElementById('attr-panel');
         const drawGroup = document.getElementById('draw-attrs');
         const cropGroup = document.getElementById('crop-attrs');
@@ -21,6 +66,7 @@ Object.assign(PhotoEditor.prototype, {
             if (fontGroup) {
                 fontGroup.style.display = this.activeTool === 'text' ? '' : 'none';
             }
+            this.syncSizeSlider();
             if (typeof this.updateFlattenButtonVisibility === 'function') {
                 this.updateFlattenButtonVisibility();
             }
@@ -241,16 +287,25 @@ Object.assign(PhotoEditor.prototype, {
 
         // Tool Attributes
         document.getElementById('tool-size').addEventListener('input', (e) => {
-            this.toolSize = parseInt(e.target.value);
-            document.getElementById('val-size').innerText = `${this.toolSize}px`;
+            const size = parseInt(e.target.value);
+            document.getElementById('val-size').innerText = `${size}px`;
+            // 這個滑桿在文字情境下調的是字級，不能寫進筆刷粗細——否則調完字級
+            // 切回筆刷會發現筆刷也被改掉了
+            const isTextContext = this.activeTool === 'text' ||
+                this.activeTextInput || this.selectedTextObject;
+            if (isTextContext) {
+                this.textSize = size;
+            } else {
+                this.toolSize = size;
+            }
             if (this.brushCursor && !this.brushCursor.classList.contains('hidden')) {
                 this.updateBrushCursorSize();
             }
             if (this.activeTextInput) {
-                this.activeTextInput.style.fontSize = `${this.toolSize * this.scale}px`;
+                this.activeTextInput.style.fontSize = `${size * this.scale}px`;
                 this.activeTextInput.dispatchEvent(new Event('input')); // trigger resize
             } else if (this.selectedTextObject) {
-                this.selectedTextObject.fontSize = this.toolSize;
+                this.selectedTextObject.fontSize = size;
                 this.render();
             }
         });
@@ -414,6 +469,16 @@ Object.assign(PhotoEditor.prototype, {
                 setPropsOpen(!document.body.classList.contains('props-open'));
             });
         }
+        const btnAttrCollapse = document.getElementById('btn-attr-collapse');
+        if (btnAttrCollapse) {
+            btnAttrCollapse.addEventListener('click', () => {
+                const collapsed = document.body.classList.toggle('attrs-collapsed');
+                btnAttrCollapse.setAttribute('aria-expanded', String(!collapsed));
+                btnAttrCollapse.setAttribute('aria-label',
+                    collapsed ? '展開工具設定' : '收合工具設定');
+            });
+        }
+
         const btnCloseProps = document.getElementById('btn-close-props');
         if (btnCloseProps) btnCloseProps.addEventListener('click', () => setPropsOpen(false));
         if (scrim) scrim.addEventListener('click', () => setPropsOpen(false));

@@ -228,13 +228,14 @@ class Ctx {
 
     /** 等一個下載完成，回傳 { filename, path }。按下「儲存」後真的有檔案落地才算過。 */
     async waitForDownload({ timeout = 6000 } = {}) {
-        const before = this.downloads.length;
+        // 用佇列取件，不要比對「呼叫當下的長度」：下載可能在這個函式被呼叫之前
+        // 就已經完成，那樣比長度會變成在等第二個永遠不會來的下載。
         const start = Date.now();
-        while (this.downloads.length === before) {
+        while (this.downloads.length === 0) {
             if (Date.now() - start > timeout) throw new Error(`等下載逾時 (${timeout}ms)：沒有檔案落地`);
             await sleep(80);
         }
-        const dl = this.downloads[this.downloads.length - 1];
+        const dl = this.downloads.shift();
         if (dl.state !== 'completed') throw new Error(`下載未完成：state=${dl.state}`);
         return dl;
     }
@@ -410,6 +411,7 @@ async function main() {
         require('./cases/text.js'),
         require('./cases/export.js'),
         require('./cases/a11y.js'),
+        require('./cases/crossbrowser.js'),
     ];
 
     const tests = [];
@@ -417,7 +419,7 @@ async function main() {
         for (const c of suite.cases) {
             for (const vp of c.viewports || suite.viewports || ['desktop']) {
                 if (ONLY && !(`${suite.group} ${c.name} ${vp}`).toLowerCase().includes(ONLY.toLowerCase())) continue;
-                tests.push({ group: suite.group, name: c.name, viewport: vp, run: c.run });
+                tests.push({ group: suite.group, name: c.name, viewport: vp, run: c.run, skip: c.skip });
             }
         }
     }
@@ -433,6 +435,14 @@ async function main() {
     for (let i = 0; i < tests.length; i++) {
         const t = tests[i];
         const started = Date.now();
+        // 缺套件的測試用 skip-with-reason 包住，不讓它把總數弄紅——
+        // 但它會以 ○ 出現在輸出裡，不會安靜消失。
+        const skipReason = typeof t.skip === 'function' ? t.skip() : null;
+        if (skipReason) {
+            results.push({ ...strip(t), status: 'skip', ms: 0, reason: skipReason });
+            flush(tests[i + 1] ? `測試在「${tests[i + 1].name}」中斷` : null);
+            continue;
+        }
         try {
             const ctx = await getContext(t.viewport);
             await withTimeout(t.run(ctx, assert), 45000, '測試逾時 45s');

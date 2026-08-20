@@ -29,6 +29,9 @@ class PhotoEditor {
         // Tools
         this.activeTool = 'select'; // select, crop, pen, rect, circle, mosaic
         this.toolSize = 5;
+        // 字級與筆刷粗細是不同的量：5px 的筆刷合理，5px 的字在任何圖上都看不見。
+        // null ＝ 使用者還沒指定，跟著圖片大小推算（見 defaultTextSize）。
+        this.textSize = null;
         this.toolColor = '#eb4034';
 
         this.isDrawing = false;
@@ -179,6 +182,17 @@ class PhotoEditor {
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    }
+
+    /** 使用者沒指定字級時用的預設值。跟著圖片高度走——固定值在大圖上一樣看不見。 */
+    defaultTextSize() {
+        if (!this.image) return 24;
+        return Math.max(12, Math.min(400, Math.round(this.image.height / 12)));
+    }
+
+    /** 目前該用的字級：使用者指定過就用他的，沒有就用推算的。 */
+    currentTextSize() {
+        return this.textSize === null ? this.defaultTextSize() : this.textSize;
     }
 
     fitToScreen() {

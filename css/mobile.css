@@ -197,6 +197,44 @@
         transform: translateY(0);
     }
 
+    /* 收合列：收起來之後只剩這一條，畫布整片露出來 */
+    .attr-collapse {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        padding: 0 2px;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-family: inherit;
+        flex: 0 0 auto;
+    }
+
+    .attr-collapse i {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        transition: transform 0.2s;
+    }
+
+    body.attrs-collapsed .tool-attributes {
+        gap: 0;
+        padding-top: 4px;
+        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    }
+
+    body.attrs-collapsed #draw-attrs,
+    body.attrs-collapsed #crop-attrs {
+        display: none !important;
+    }
+
+    body.attrs-collapsed .attr-collapse i {
+        transform: rotate(180deg);
+    }
+
     /* ---- 影像調整：從底部升起的 sheet ---- */
     .sidebar.properties-sidebar {
         position: fixed;

@@ -125,6 +125,63 @@ module.exports = {
             },
         },
         {
+            // 面板浮在畫布上，高度再怎麼調都會蓋住一塊圖。要能收起來，
+            // 使用者才碰得到被蓋住的那塊。
+            name: '手機：工具屬性面板可以收合，讓出被它蓋住的畫布',
+            viewports: ['mobile', 'tablet'],
+            run: async (t, assert) => {
+                await t.loadImage();
+                await t.tapSelector('.tool-btn[data-tool="text"]');
+                await t.sleep(400);
+
+                const probe = await t.eval(`(() => {
+                    const r = document.querySelector('.tool-attributes').getBoundingClientRect();
+                    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                })()`);
+                const who = `(() => { const el = document.elementFromPoint(${probe.x}, ${probe.y});
+                    return el ? (el.id || el.className || el.tagName) : null; })()`;
+
+                const before = await t.eval(who);
+                assert(before !== 'editor-canvas',
+                    `前置條件失敗：展開的面板根本沒蓋住那個點（那裡是 ${before}）`);
+
+                await t.tapSelector('#btn-attr-collapse');
+                await t.sleep(450);
+                const after = await t.eval(who);
+                assert.equal(after, 'editor-canvas',
+                    `收合之後那個位置還是碰不到畫布（那裡是 ${after}）`);
+
+                // 收合列本身要留著，不然使用者沒辦法把面板叫回來
+                await t.tapSelector('#btn-attr-collapse');
+                await t.sleep(450);
+                const backOk = await t.eval(`(() => {
+                    const el = document.getElementById('tool-size');
+                    const r = el.getBoundingClientRect();
+                    return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === el;
+                })()`);
+                assert(backOk, '再展開之後尺寸滑桿點不到');
+            },
+        },
+        {
+            // 剛選好工具就是要調它的參數，這時還要使用者自己展開一次是多一步
+            name: '手機：換工具會自動把收合的面板展開',
+            viewports: ['mobile'],
+            run: async (t, assert) => {
+                await t.loadImage();
+                await t.tapSelector('.tool-btn[data-tool="pen"]');
+                await t.sleep(400);
+                await t.tapSelector('#btn-attr-collapse');
+                await t.sleep(450);
+                assert(await t.eval(`document.body.classList.contains('attrs-collapsed')`),
+                    '前置條件失敗：按了收合但沒有收合');
+
+                await t.tapSelector('.tool-btn[data-tool="text"]');
+                await t.sleep(450);
+                assert(!(await t.eval(`document.body.classList.contains('attrs-collapsed')`)),
+                    '換工具之後面板還是收合的');
+            },
+        },
+        {
             name: '手機：批量處理面板不會被切掉',
             viewports: ['mobile'],
             run: async (t, assert) => {
