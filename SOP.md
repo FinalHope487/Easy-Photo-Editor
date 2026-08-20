@@ -132,6 +132,20 @@ CDP `Input.dispatchTouchEvent` 每個事件卡 ~1.4 秒（7 個事件的拖曳�
 → 根因類型：測試進入點與使用者進入點不一致。
 升級相依套件時特別容易踩到：升級影響的是「怎麼啟動」，而測試通常跳過啟動。
 
+**(2026-08-20・GitHub + gh CLI・Opus 5)**
+合併疊在一起的 PR（#5 的 base 是 #4 的分支）時用 `gh pr merge --delete-branch` →
+**下游那個 PR 會被自動 CLOSED，不是改指向 main**，而且救不回來：
+`gh pr reopen` 會回 `Could not open the pull request`，
+`gh pr edit --base` 會回 `Cannot change the base branch of a closed pull request` →
+1. 合上游之前，先把下游 PR 的 base 改掉：`gh pr edit <下游> --base main`
+2. 已經誤刪的話：把被刪的 base 分支推回去
+   （`git push origin <該分支的 tip sha>:refs/heads/<分支名>`），
+   再 `gh pr reopen` → `gh pr edit --base main` → 合完再刪分支
+3. tip sha 從 `gh pr view <上游> --json headRefOid` 拿得到，
+   本機分支已被 `--delete-branch` 一起刪掉時特別有用
+→ 根因類型：工具語意。分支刪除會連帶關閉以它為 base 的 PR。
+**順序原則**：先讓所有 PR 都指向 main，再開始合，最後才刪分支。
+
 ---
 
 ## 已退役

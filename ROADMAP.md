@@ -164,6 +164,20 @@
      只問 `body` 有沒有那個 class——CSS 整段拿掉它照樣綠。改成問
      `elementFromPoint`，再把 CSS 改壞一次，兩台裝置都紅了才算數。
 
+- **2026-08-20 · 三個 PR 合進 `main`，線上版驗證通過**
+  合併順序 #4 → #5 → #6，`main` 現在是 `78d3e2d`。
+  **線上版（實跑）**：`npm run test:pages` → **8 passed, 0 failed**。
+  首頁 13767 → 15116 bytes，確認真的換了一份。
+  **合併後的 `main` 實跑** `npm test` → **80 passed, 0 failed, 0 skipped**。
+  **教訓（不在別處）**：
+  1. 疊起來的 PR 不能直接用 `gh pr merge --delete-branch` 從上游開始合——
+     下游 PR 會被連帶 CLOSED 而且無法 reopen（base 分支已不存在）。
+     正確順序：先把所有 PR 的 base 都改成 `main`，再合，最後才刪分支。
+     詳見 `SOP.md`。
+  2. GitHub Pages 會為每個 push 起一次建置，被後續 commit 超車的那次會標成
+     `errored`。看的是**最後那次**的狀態，不是 `builds/latest`——
+     實測 `builds/latest` 一度回傳被超車的那次錯誤，`builds` 列表才是對的。
+
 - **2026-08-19 · 相依升級到漏洞歸零 + 補上 app 進入點的測試**
   改動檔案：`package.json`、`package-lock.json`、`tests/main.js`、
   `tests/cases/desktop-shell.js`（新增）。commit `a144a16`、`9ff5ecf`。
