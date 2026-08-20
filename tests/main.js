@@ -412,6 +412,7 @@ async function main() {
         require('./cases/export.js'),
         require('./cases/a11y.js'),
         require('./cases/crossbrowser.js'),
+        require('./cases/desktop-shell.js'),
     ];
 
     const tests = [];
