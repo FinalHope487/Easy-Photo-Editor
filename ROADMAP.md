@@ -15,14 +15,7 @@
 
 <!-- 格式：- [標記] 說明（可附上下文/來源 session） -->
 
-- `[next]` **升級 `electron` / `electron-builder` 清掉 `npm audit` 的 18 個漏洞**
-  （17 high、1 critical；critical 是 `tar` 的 path traversal）。
-  **你已授權**（2026-08-19：「pr 合完直接做」），但**卡在 PR #4 / #5 合併之後**——
-  在未合併的分支上動 `package.json` 與 lock 會讓兩個 PR 都變得難審。
-  做法：升級 → 跑完整 `npm test`（含 WebKit 那層）→ 有壞就回退，不硬上。
-  要留意 Electron 大版本升級可能動到 `tests/main.js` 依賴的 CDP 行為
-  （`Emulation.setDeviceMetricsOverride`、`Input.dispatchTouchEvent`）。
-  這些都是 devDependency，不影響 GitHub Pages 的線上版（線上只有靜態檔）。
+**本輪清空。**
 
 ---
 
@@ -86,6 +79,23 @@
   分頁在只有一組時是多餘的框；可拖曳 sheet 要跟畫布本身的拖曳搶手勢。
   收合列是三者中唯一不新增手勢的。換工具自動展開——剛選完工具多半就是要調參數。
   反悔成本：`index.html` 一個 button、`css/mobile.css` 一段、`js/ui.js` 兩個小函式。
+
+- **(2026-08-19・你授權) 升級相依到 `npm audit` 歸零，含 Electron 大版本。**
+  你答「pr 合完直接做」。**PR 其實還沒合**（`origin/main` 仍是 `3274534`），
+  但原本的閘門理由是「別讓 `package.json` 與 lock 弄髒 #4 / #5 的 diff」——
+  改成把這輪疊在 #5 上開第三個分支，同樣達成目的，所以照做了。
+  分兩步：`npm audit fix`（只動 lock，清掉 18 之中的 17）→
+  `electron@40 → 43.4.1`（剩下那個 high 只能跳大版本）。
+  兩步各自跑過完整 `npm test`。
+  反悔成本：`package.json` 一行 + `git checkout` lock 檔。
+  Electron 是 devDependency，線上版（GitHub Pages）只有靜態檔，不受影響。
+
+- **(2026-08-19) 補一條真的走 app 進入點的測試。**
+  依據：升級時發現其餘 79 條測試全部是測試自己 `new BrowserWindow` + `loadFile`，
+  **完全不經過 `main.js`**——Electron 大版本換掉 `main.js` 用到的 API 時，
+  那 79 條照樣全綠而 app 開不起來。`tests/cases/desktop-shell.js` 真的
+  spawn `electron .`，開遠端除錯埠，用 playwright 連進去斷言編輯器活著。
+  反悔成本：刪一個檔 + `tests/main.js` 一行。
 
 - **(2026-08-19・你批准) 安裝 playwright，WebKit 那層接進 `npm test`。**
   你在本輪回答「批准安裝」。已跑 `npm i -D playwright` +
@@ -153,3 +163,16 @@
   4. 新增一層驗證之後，第一件事是**證明它會紅**。WebKit 那層第一版的收合斷言
      只問 `body` 有沒有那個 class——CSS 整段拿掉它照樣綠。改成問
      `elementFromPoint`，再把 CSS 改壞一次，兩台裝置都紅了才算數。
+
+- **2026-08-19 · 相依升級到漏洞歸零 + 補上 app 進入點的測試**
+  改動檔案：`package.json`、`package-lock.json`、`tests/main.js`、
+  `tests/cases/desktop-shell.js`（新增）。commit `a144a16`、`9ff5ecf`。
+  **測試數（實跑）**：`npm test` → **80 passed, 0 failed, 0 skipped（共 80）**。
+  升級前先跑基準線 79/0/0 才動手，兩步升級各自跑過完整套件。
+  `npm audit` → **found 0 vulnerabilities**（起點 17 high + 1 critical）。
+  **教訓（不在別處）**：
+  1. 升級相依影響的是「怎麼啟動」，而測試通常跳過啟動。這輪 79 條測試沒有
+     一條走過 `main.js`——升級把它用到的 API 換掉也不會有人變紅。
+  2. `sed -i` 在 Windows 上會把整個檔案的 CRLF 重寫成 LF，即使只換一行。
+     `git diff` 因為換行正規化而顯示空的，`git status` 卻說檔案被改了。
+     不可碰的檔案不要用 `sed -i`。

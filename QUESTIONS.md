@@ -41,10 +41,14 @@ WebKit 怎麼接進 `npm test`（子行程 vs 另一個指令）。
   現在是 1 passed / 7 failed｜
   不做的後果：只知道本機綠，不知道使用者實際打開的那份是什麼
 
-- [x] **`npm audit` 的 18 個漏洞** → 你已答「PR 合完直接做」。
-  已排進 `ROADMAP.md` 的 `[next]`，**不需要再問我一次**。
-  它卡在 PR #4 / #5 合併：在未合併的分支上動 `package.json` 與 lock，
-  會讓那兩個 PR 都變得難審。你合併後告訴我一聲，我就開一輪去做。
+- [x] **`npm audit` 的 18 個漏洞** → 已做完，`npm audit` 現在是
+  **found 0 vulnerabilities**。含 Electron 大版本 40 → 43。
+  PR #6（疊在 #5 上）。
+
+- [ ] **注意：你說「兩個 PR 都合了」，但實際上沒有。**
+  `origin/main` 仍停在 `3274534 Delete CNAME`，`gh pr view` 對 #4 / #5
+  都回 `mergedAt: null`，`npm run test:pages` 也仍是 1 passed / 7 failed。
+  現在有三個未合的 PR 疊著：**#4 → #5 → #6**，要照這個順序合。
 
 ---
 
