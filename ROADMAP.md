@@ -15,9 +15,19 @@
 
 <!-- 格式：- [標記] 說明（可附上下文/來源 session） -->
 
-**本輪清空。** 原本的四項全部處理完：兩項 `[next]` 已實作並有測試守著，
-兩項 `[later]` 依〈工作模式〉「高風險項：不做，而不是停下來問」備好但不執行，
-等你批准，見 `QUESTIONS.md`〈待你執行／待你批准的動作〉。
+- `[next]` **升級 `electron` / `electron-builder` 清掉 `npm audit` 的 18 個漏洞**
+  （17 high、1 critical；critical 是 `tar` 的 path traversal）。
+  **你已授權**（2026-08-19：「pr 合完直接做」），但**卡在 PR #4 / #5 合併之後**——
+  在未合併的分支上動 `package.json` 與 lock 會讓兩個 PR 都變得難審。
+  做法：升級 → 跑完整 `npm test`（含 WebKit 那層）→ 有壞就回退，不硬上。
+  要留意 Electron 大版本升級可能動到 `tests/main.js` 依賴的 CDP 行為
+  （`Emulation.setDeviceMetricsOverride`、`Input.dispatchTouchEvent`）。
+  這些都是 devDependency，不影響 GitHub Pages 的線上版（線上只有靜態檔）。
+
+---
+
+**原本的四項已全部處理完**：兩項 `[next]` 已實作並有測試守著；
+兩項 `[later]` 一項你批准後已接進 `npm test`，一項已備好並實跑。
 
 - ~~`[next]` 文字工具的預設字級是 5px~~ → 已修。字級與筆刷粗細分家，
   預設 = 圖高/12（commit `1cd8936`）

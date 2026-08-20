@@ -41,15 +41,10 @@ WebKit 怎麼接進 `npm test`（子行程 vs 另一個指令）。
   現在是 1 passed / 7 failed｜
   不做的後果：只知道本機綠，不知道使用者實際打開的那份是什麼
 
-- [ ] **要不要處理 `npm audit` 的 18 個漏洞**（17 high、1 critical）｜
-  **不是這輪帶進來的**——逐項看過，全部來自既有的 `electron` /
-  `electron-builder` 依賴樹（`tar` 的 path traversal 是那個 critical），
-  playwright 不在名單上｜
-  升級 `electron` / `electron-builder` 屬「新增或移除相依套件」＝高風險，
-  而且 Electron 大版本升級可能動到 `tests/main.js` 依賴的 CDP 行為，
-  我不會自己動｜
-  不做的後果：這些是建置與桌面殼的相依，不會出現在 GitHub Pages 的線上版；
-  但 `npm i` 的人會一直看到警告
+- [x] **`npm audit` 的 18 個漏洞** → 你已答「PR 合完直接做」。
+  已排進 `ROADMAP.md` 的 `[next]`，**不需要再問我一次**。
+  它卡在 PR #4 / #5 合併：在未合併的分支上動 `package.json` 與 lock，
+  會讓那兩個 PR 都變得難審。你合併後告訴我一聲，我就開一輪去做。
 
 ---
 
